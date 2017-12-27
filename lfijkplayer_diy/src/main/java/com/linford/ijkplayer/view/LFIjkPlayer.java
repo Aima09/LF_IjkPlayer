@@ -155,7 +155,10 @@ public class LFIjkPlayer extends FrameLayout {
         }
     }
 
-    public void setListener(VideoPlayerListener listener) {
+    public SurfaceView getSurfaceView(){
+        return surfaceView;
+    }
+    public void setVideoPlayerListener(VideoPlayerListener listener) {
         this.listener = listener;
         if (mMediaPlayer != null) {
             mMediaPlayer.setOnPreparedListener(listener);
@@ -192,7 +195,13 @@ public class LFIjkPlayer extends FrameLayout {
         }
     }
 
-
+    /**
+     * 是否正在播放
+     * @return
+     */
+    public boolean isPlaying() {
+        return mMediaPlayer!=null?mMediaPlayer.isPlaying():false;
+    }
     public void reset() {
         if (mMediaPlayer != null) {
             mMediaPlayer.reset();
