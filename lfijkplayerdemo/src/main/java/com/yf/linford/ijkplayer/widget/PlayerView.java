@@ -636,8 +636,8 @@ public class PlayerView {
         if (rootView == null) {
             streamSelectView = (LinearLayout) mActivity.findViewById(R.id.simple_player_select_stream_container);
             streamSelectListView = (ListView) mActivity.findViewById(R.id.simple_player_select_streams_list);
-            ll_topbar = mActivity.findViewById(R.id.app_video_top_box);
-            ll_bottombar = mActivity.findViewById(R.id.ll_bottom_bar);
+            ll_topbar = mActivity.findViewById(R.id.ijkplayer_top_bar);
+            ll_bottombar = mActivity.findViewById(R.id.ijkplayer_bottom_bar);
             iv_trumb = (ImageView) mActivity.findViewById(R.id.iv_trumb);
             iv_back = (ImageView) mActivity.findViewById(R.id.app_video_finish);
             iv_menu = (ImageView) mActivity.findViewById(R.id.app_video_menu);
@@ -651,8 +651,8 @@ public class PlayerView {
         } else {
             streamSelectView = (LinearLayout) rootView.findViewById(R.id.simple_player_select_stream_container);
             streamSelectListView = (ListView) rootView.findViewById(R.id.simple_player_select_streams_list);
-            ll_topbar = rootView.findViewById(R.id.app_video_top_box);
-            ll_bottombar = rootView.findViewById(R.id.ll_bottom_bar);
+            ll_topbar = rootView.findViewById(R.id.ijkplayer_top_bar);
+            ll_bottombar = rootView.findViewById(R.id.ijkplayer_bottom_bar);
             iv_trumb = (ImageView) rootView.findViewById(R.id.iv_trumb);
             iv_back = (ImageView) rootView.findViewById(R.id.app_video_finish);
             iv_menu = (ImageView) rootView.findViewById(R.id.app_video_menu);

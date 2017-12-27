@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/LF_IjkPlayer.iml" filepath="$PROJECT_DIR$/LF_IjkPlayer.iml" />
       <module fileurl="file://$PROJECT_DIR$/ijkplayer-arm64/ijkplayer-arm64.iml" filepath="$PROJECT_DIR$/ijkplayer-arm64/ijkplayer-arm64.iml" />
       <module fileurl="file://$PROJECT_DIR$/ijkplayer-armv5/ijkplayer-armv5.iml" filepath="$PROJECT_DIR$/ijkplayer-armv5/ijkplayer-armv5.iml" />
       <module fileurl="file://$PROJECT_DIR$/ijkplayer-armv7a/ijkplayer-armv7a.iml" filepath="$PROJECT_DIR$/ijkplayer-armv7a/ijkplayer-armv7a.iml" />
@@ -13,7 +14,6 @@
       <module fileurl="file://$PROJECT_DIR$/lfijkplayer_diy/lfijkplayer_diy.iml" filepath="$PROJECT_DIR$/lfijkplayer_diy/lfijkplayer_diy.iml" />
       <module fileurl="file://$PROJECT_DIR$/lfijkplayer_zero/lfijkplayer_zero.iml" filepath="$PROJECT_DIR$/lfijkplayer_zero/lfijkplayer_zero.iml" />
       <module fileurl="file://$PROJECT_DIR$/lfijkplayerdemo/lfijkplayerdemo.iml" filepath="$PROJECT_DIR$/lfijkplayerdemo/lfijkplayerdemo.iml" />
-      <module fileurl="file://$PROJECT_DIR$/lmnplayer.iml" filepath="$PROJECT_DIR$/lmnplayer.iml" />
     </modules>
   </component>
 </project>
