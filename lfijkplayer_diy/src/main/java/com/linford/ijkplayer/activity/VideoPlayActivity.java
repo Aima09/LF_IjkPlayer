@@ -498,6 +498,9 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
     }
 
 
+    /**
+     * 定义手势监听类
+     */
     private class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
         /**
          * 单击事件
@@ -686,16 +689,23 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
 
     @Override protected void onPause() {
         super.onPause();
-        mVideoIjkplayer.pause();
+        if (mVideoIjkplayer.isPlaying()) {
+            mVideoIjkplayer.pause();
+        }
     }
 
     @Override protected void onResume() {
         super.onResume();
+        if (mVideoIjkplayer!=null){
+            mVideoIjkplayer.reset();
+        }
     }
 
     @Override protected void onStop() {
         super.onStop();
-        mVideoIjkplayer.stop();
+        if (mVideoIjkplayer.isPlaying()) {
+            mVideoIjkplayer.stop();
+        }
     }
 
     @Override
