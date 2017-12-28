@@ -1,12 +1,13 @@
 package com.linford.ijkplayer.activity;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.provider.Settings;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.Display;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
@@ -21,9 +22,9 @@ import android.widget.TextView;
 import com.linford.ijkplayer.R;
 import com.linford.ijkplayer.entity.VideoInfo;
 import com.linford.ijkplayer.listener.VideoPlayerListener;
-import com.linford.ijkplayer.utils.Strings;
-import com.linford.ijkplayer.utils.ToastUtil;
+import com.linford.ijkplayer.utils.StringsUtil;
 import com.linford.ijkplayer.view.LFIjkPlayer;
+import com.linford.ijkplayer.view.LayoutQuery;
 import com.linford.ijkplayer.view.VerticalSeekBar;
 
 import butterknife.BindView;
@@ -33,57 +34,57 @@ import tv.danmaku.ijk.media.player.IMediaPlayer;
 
 public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerListener, SeekBar.OnSeekBarChangeListener, AudioManager.OnAudioFocusChangeListener {
 
+    public static final String TAG = "VideoPlayActivity";
 
     @BindView(R.id.ijkPlayer)
-    LFIjkPlayer mVideoIjkplayer;
+    LFIjkPlayer mVideoIjkplayer;//播放器控件
 
     //顶部控制栏控件
-    @BindView(R.id.ijkplayer_top_bar)
-    LinearLayout mIjkplayerTopBar;
-    @BindView(R.id.app_video_title)
-    TextView mAppVideoTitle;
+    @BindView(R.id.ijkplayer_top_bar)//顶部控制栏根布局
+            LinearLayout mIjkplayerTopBar;
+    @BindView(R.id.app_video_title)//视频标题
+            TextView mAppVideoTitle;
+
     //中间控件
-    @BindView(R.id.play_icon)
-    ImageView mPlayIcon;
+    @BindView(R.id.play_icon)//中间播放/暂停的图标
+            ImageView mPlayIcon;
     @BindView(R.id.app_video_box)
-    RelativeLayout mAppVideoBox;
-    @BindView(R.id.iv_trumb)
-    ImageView mIvTrumb;
-    @BindView(R.id.volume_controller_container)
-    LinearLayout volumeControllerContainer;
-    @BindView(R.id.brightness_controller_container)
-    LinearLayout brightnessControllerContainer;
-    @BindView(R.id.volume_controller_seekBar)
-    VerticalSeekBar volumeControllerSeekBar;
-    @BindView(R.id.brightness_controller_seekbar)
-    VerticalSeekBar brightnessControllerSeekbar;
+    RelativeLayout mAppVideoBox;//根布局
+    @BindView(R.id.iv_trumb)//封面
+            ImageView mIvTrumb;
+    @BindView(R.id.volume_controller_container)//音量控制布局
+            LinearLayout volumeControllerContainer;
+    @BindView(R.id.brightness_controller_container)//亮度控制布局
+            LinearLayout brightnessControllerContainer;
+    @BindView(R.id.volume_controller_seekBar)//音量进度条
+            VerticalSeekBar volumeControllerSeekBar;
+    @BindView(R.id.brightness_controller_seekbar)//亮度进度条
+            VerticalSeekBar brightnessControllerSeekbar;
 
     //底部控制栏控件
-    @BindView(R.id.ijkplayer_bottom_bar)
-    LinearLayout mIjkplayerBottomBar;
-    @BindView(R.id.app_video_play)
-    ImageView mAppVideoPlay;
-    @BindView(R.id.app_video_seekBar)
-    SeekBar mAppVideoSeekBar;
-    @BindView(R.id.app_video_currentTime)
-    TextView mAppVideoCurrentTime;
-    @BindView(R.id.app_video_endTime)
-    TextView mAppVideoEndTime;
+    @BindView(R.id.ijkplayer_bottom_bar)//底部控制栏根布局
+            LinearLayout mIjkplayerBottomBar;
+    @BindView(R.id.app_video_play)//顶部暂停/播放按钮
+            ImageView mAppVideoPlay;
+    @BindView(R.id.app_video_seekBar)//视频播放进度条
+            SeekBar mAppVideoSeekBar;
+    @BindView(R.id.app_video_currentTime)//当前播放进度显示
+            TextView mAppVideoCurrentTime;
+    @BindView(R.id.app_video_endTime)//总播放总进度
+            TextView mAppVideoEndTime;
+    @BindView(R.id.video_back) ImageView mVideoBack;
 
-
-    /**
-     * 最大声音
-     */
+    //最大音量
     private int mMaxVolume;
-    /**
-     * 当前声音
-     */
+    //当前音量
     private int mVolume = -1;
-    /**
-     * 当前亮度
-     */
+    //当前亮度
     private float mBrightness = -1f;
-
+    /**
+     * 滑动进度条得到的新位置，和当前播放位置是有区别的,newPosition =0也会调用设置的，故初始化值为-1
+     */
+    private long newPosition = -1;
+    private LayoutQuery mLayoutQuery;
     private AudioManager mAudioManager;
     private GestureDetector mGestureDetector;
 
@@ -102,16 +103,15 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
 
     }
 
-    /**
-     * 初始化视图和监听器
-     */
     private void initViewListener() {
+        mLayoutQuery = new LayoutQuery(this);
         mAudioManager = (AudioManager) this.getSystemService(Context.AUDIO_SERVICE);
         startPlay();
         //处理控制栏的显示
         initControllView();
         //注册监听事件
         mVideoIjkplayer.setVideoPlayerListener(this);
+        //音乐进度条事件监听注册
         mAppVideoSeekBar.setOnSeekBarChangeListener(this);
         mGestureDetector = new GestureDetector(this, new VideoPlayActivity.MyGestureListener());
 
@@ -124,34 +124,33 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
         final VideoInfo videoInfo = getIntent().getParcelableExtra("videoInfo");
         mVideoIjkplayer.setVideoPath(videoInfo.getPath());
         mAppVideoTitle.setText(videoInfo.getTitle());
+        mHandler.sendEmptyMessage(1);
         //  GlideApp.with(this).asBitmap().load(videoInfo.getThumbPath()).into(mIvTrumb);
         //获取音源焦点
         initAudioFocus();
     }
 
-    /***
-     * 暂停后启动播放
-     */
     private void MediaStart() {
-        mVideoIjkplayer.start();
+        //mVideoIjkplayer.start();
         mHandler.sendEmptyMessage(1);
         //初始化视频进度条和文本显示
         mAppVideoSeekBar.setMax((int) mVideoIjkplayer.getDuration());
         mAppVideoSeekBar.setProgress((int) mVideoIjkplayer.getCurrentPosition());
-        mAppVideoEndTime.setText(Strings.millisToText(mVideoIjkplayer.getDuration()));
-        mAppVideoCurrentTime.setText(Strings.millisToText(mVideoIjkplayer.getCurrentPosition()));
+        mAppVideoEndTime.setText(StringsUtil.millisToText(mVideoIjkplayer.getDuration()));
+        mAppVideoCurrentTime.setText(StringsUtil.millisToText(mVideoIjkplayer.getCurrentPosition()));
 
     }
 
     ////////////////////////////////显示顶部和底部控制栏//////////////////////////////////////////
     private void initControllView() {
+        //为的是点击屏幕后,上下控制栏都会消失,设置底部事件后可以延迟消失
         mIjkplayerBottomBar.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
+            @Override public boolean onTouch(View v, MotionEvent event) {
                 delay6Second();
                 return true;
             }
         });
+
         delay6Second();
 
     }
@@ -173,6 +172,7 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
     /**
      * 根据发送过来的参数显示控制栏
      */
+    @SuppressLint("HandlerLeak")
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -233,8 +233,7 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
      *
      * @param focusChange
      */
-    @Override
-    public void onAudioFocusChange(int focusChange) {
+    @Override public void onAudioFocusChange(int focusChange) {
         switch (focusChange) {
             case AudioManager.AUDIOFOCUS_GAIN:
                 break;
@@ -293,19 +292,7 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
                 break;
         }
     }*/
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (mHandler != null) {
-            mHandler.removeMessages(0);
-            mHandler.removeMessages(1);
-            mHandler.removeMessages(2);
 
-        }
-        //取消音源焦点
-        mAudioManager.abandonAudioFocus(this);
-
-    }
 
     /**
      * 更新进度条
@@ -316,16 +303,17 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
             public void run() {
                 if (mVideoIjkplayer.isPlaying()) {
                     int position = (int) mVideoIjkplayer.getCurrentPosition();
+                    // Log.i(TAG, "run: 更新音乐进度条===>"+position);
                     mAppVideoSeekBar.setProgress(position);
                     //mTipsProgress.setProgress(currentProgress);
                     //显示当前视频进度文本
-                    mAppVideoCurrentTime.setText(Strings.millisToText(position));
+                    mAppVideoCurrentTime.setText(StringsUtil.millisToText(position));
                 }
             }
         });
     }
 
-    @OnClick({R.id.app_video_play, R.id.app_video_box, R.id.play_icon})
+    @OnClick({R.id.app_video_play, R.id.play_icon, R.id.video_back})
     public void onViewClicked(View view) {
         switch (view.getId()) {
             case R.id.app_video_play:
@@ -336,10 +324,6 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
                 }
                 mHandler.sendEmptyMessage(2);
                 break;
-            case R.id.app_video_box:
-                refreshVideoControlUI(mIjkplayerBottomBar.getVisibility() == View.VISIBLE ? View.INVISIBLE
-                        : View.VISIBLE);
-                break;
             case R.id.play_icon:
                 if (mVideoIjkplayer.isPlaying()) {
                     mVideoIjkplayer.pause();
@@ -348,63 +332,73 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
                 }
                 mHandler.sendEmptyMessage(2);
                 break;
+            case R.id.video_back:
+                finish();
+                break;
         }
     }
 
     /////////////////////////////////Ijkplayer播放器回调的监听////////////////////////////////////////////////
-    @Override
-    public void onPrepared(IMediaPlayer mp) {
+
+    @Override public void onPrepared(IMediaPlayer mp) {
         //每隔0.5秒更新视屏界面信息，如进度条，当前播放时间点等等
         // startPlay();
         MediaStart();
     }
 
 
-    @Override
-    public void onCompletion(IMediaPlayer mp) {
+    @Override public void onCompletion(IMediaPlayer mp) {
 
     }
 
-    @Override
-    public void onBufferingUpdate(IMediaPlayer mp, int percent) {
+    @Override public void onBufferingUpdate(IMediaPlayer mp, int percent) {
 
     }
 
-    @Override
-    public void onSeekComplete(IMediaPlayer mp) {
+    @Override public void onSeekComplete(IMediaPlayer mp) {
 
     }
 
-    @Override
-    public void onVideoSizeChanged(IMediaPlayer mp, int width, int height, int sar_num, int sar_den) {
+    @Override public void onVideoSizeChanged(IMediaPlayer mp, int width, int height, int sar_num, int sar_den) {
 
     }
 
-    @Override
-    public boolean onError(IMediaPlayer mp, int what, int extra) {
+    @Override public boolean onError(IMediaPlayer mp, int what, int extra) {
         return false;
     }
 
-    @Override
-    public boolean onInfo(IMediaPlayer mp, int what, int extra) {
+    private int MEDIA_INFO_VIDEO_RENDERING_START = 3;//视频准备渲染
+    int MEDIA_INFO_BUFFERING_START = 701;//开始缓冲
+    int MEDIA_INFO_BUFFERING_END = 702;//缓冲结束
+    int MEDIA_INFO_VIDEO_ROTATION_CHANGED = 10001;//视频选择信息
+    int MEDIA_ERROR_SERVER_DIED = 100;//视频中断，一般是视频源异常或者不支持的视频类型。
+    int MEDIA_ERROR_IJK_PLAYER = -10000;//一般是视频源有问题或者数据格式不支持，比如音频不是AAC之类的
+    int MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK = 200;//数据错误没有有效的回收
+
+
+    @Override public boolean onInfo(IMediaPlayer mp, int what, int extra) {
+
         return false;
     }
 
     /////////////////////////////////Ijkplayer播放器回调的监听//////////////////////end////////////////////////
 
+
     ///////////////////////////////进度条监听事件////////////////////////////////////start/////////////////////
-    @Override
-    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+    @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         switch (seekBar.getId()) {
             case R.id.app_video_seekBar:
+                if (!fromUser) {//一定要判断一下是否用户操作,否则进度条会自己拖动
+                    return;
+                }
+                // int newPosition = (int) ((mVideoIjkplayer.getDuration() * progress * 1.0) / 100);
                 mVideoIjkplayer.seekTo(progress);
                 break;
         }
 
     }
 
-    @Override
-    public void onStartTrackingTouch(SeekBar seekBar) {
+    @Override public void onStartTrackingTouch(SeekBar seekBar) {
 
     }
 
@@ -419,10 +413,17 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
 
     ///////////////////////////////进度条监听事件//////////////////////////////////end////////////////////////////
 
+
     ///////////////////////////////手势滑动监听////////////////////////////////////start//////////////////////
+
+    /**
+     * 手势注册进onTouchEvent方法里
+     *
+     * @param event
+     * @return
+     */
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        ToastUtil.showShortToastCenter("23333");
         if (mGestureDetector.onTouchEvent(event))
             return true;
 
@@ -437,39 +438,105 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
     }
 
     /**
+     * 同步进度
+     */
+    private static final int MESSAGE_SHOW_PROGRESS = 1;
+    /**
+     * 设置新位置
+     */
+    private static final int MESSAGE_SEEK_NEW_POSITION = 3;
+    /**
+     * 隐藏提示的box
+     */
+    private static final int MESSAGE_HIDE_CENTER_BOX = 4;
+    /**
+     * 重新播放
+     */
+    private static final int MESSAGE_RESTART_PLAY = 5;
+    /**
+     * 定时隐藏
+     */
+    @SuppressLint("HandlerLeak")
+    private Handler mDismissHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                /**滑动完成，隐藏滑动提示的box*/
+                case MESSAGE_HIDE_CENTER_BOX:
+                    volumeControllerContainer.setVisibility(View.GONE);
+                    brightnessControllerContainer.setVisibility(View.GONE);
+                    mLayoutQuery.id(R.id.app_video_fastForward_box).gone();
+                    break;
+                /**滑动完成，设置播放进度*/
+                case MESSAGE_SEEK_NEW_POSITION:
+                    if (newPosition >= 0) {
+                        mVideoIjkplayer.seekTo((int) newPosition);
+                        newPosition = -1;
+                    }
+                    break;
+
+            }
+        }
+    };
+
+    /**
      * 手势结束
      */
-
     private void endGesture() {
         mVolume = -1;
         mBrightness = -1f;
 
+        if (newPosition >= 0) {
+            mDismissHandler.removeMessages(MESSAGE_SEEK_NEW_POSITION);
+            mDismissHandler.sendEmptyMessage(MESSAGE_SEEK_NEW_POSITION);
+        } else {
+            /**什么都不做(do nothing)*/
+        }
         // 隐藏
-        mDismissHandler.removeMessages(0);
-        mDismissHandler.sendEmptyMessageDelayed(0, 500);
+        mDismissHandler.removeMessages(MESSAGE_HIDE_CENTER_BOX);
+        mDismissHandler.sendEmptyMessageDelayed(MESSAGE_HIDE_CENTER_BOX, 500);
     }
 
-    private class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
 
-       /* *//**//** 双击 *//**//*
+    private class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
+        /**
+         * 单击事件
+         *
+         * @param e
+         * @return
+         */
+        @Override public boolean onSingleTapUp(MotionEvent e) {
+            refreshVideoControlUI(mIjkplayerBottomBar.getVisibility() == View.VISIBLE ? View.INVISIBLE
+                    : View.VISIBLE);
+            return super.onSingleTapUp(e);
+        }
+
+        /**
+         * 双击
+         */
         @Override
         public boolean onDoubleTap(MotionEvent e) {
-
-            if(mDisplayAspectRatio == PLVideoTextureView.ASPECT_RATIO_FIT_PARENT){
-                mDisplayAspectRatio = PLVideoTextureView.ASPECT_RATIO_PAVED_PARENT;
-            }else {
-                mDisplayAspectRatio = PLVideoTextureView.ASPECT_RATIO_FIT_PARENT;
+            if (mVideoIjkplayer.isPlaying()) {
+                mVideoIjkplayer.pause();
+            } else {
+                mVideoIjkplayer.start();
             }
-
-            if (mVideoView != null) mVideoView.setDisplayAspectRatio(mDisplayAspectRatio);
-//            if (mLayout == VideoView.VIDEO_LAYOUT_ZOOM)
-//                mLayout = VideoView.VIDEO_LAYOUT_ORIGIN;
-//            else
+            mHandler.sendEmptyMessage(2);
+//            if(mDisplayAspectRatio == PLVideoTextureView.ASPECT_RATIO_FIT_PARENT){
+//                mDisplayAspectRatio = PLVideoTextureView.ASPECT_RATIO_PAVED_PARENT;
+//            }else {
+//                mDisplayAspectRatio = PLVideoTextureView.ASPECT_RATIO_FIT_PARENT;
+//            }
+//
+//            if (mVideoView != null) mVideoView.setDisplayAspectRatio(mDisplayAspectRatio);
+////            if (mLayout == VideoView.VIDEO_LAYOUT_ZOOM)
+////                mLayout = VideoView.VIDEO_LAYOUT_ORIGIN;
+////            else
 //                mLayout++;
 //            if (mVideoView != null)
 //                mVideoView.setVideoLayout(mLayout, 0);
             return true;
-        }*/
+        }
 
         /**
          * 滑动
@@ -478,30 +545,66 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
         public boolean onScroll(MotionEvent e1, MotionEvent e2,
                                 float distanceX, float distanceY) {
             float mOldX = e1.getX(), mOldY = e1.getY();
+            float deltaY = mOldY - e2.getY();
+            float deltaX = mOldX - e2.getX();
             int y = (int) e2.getRawY();
+
             Display disp = getWindowManager().getDefaultDisplay();
             int windowWidth = disp.getWidth();
             int windowHeight = disp.getHeight();
 
-            if (mOldX > windowWidth * 4.0 / 5)// 右边滑动
-                onVolumeSlide((mOldY - y) / windowHeight);
-            else if (mOldX < windowWidth / 5.0)// 左边滑动
-                onBrightnessSlide((mOldY - y) / windowHeight);
+            boolean seekTo = Math.abs(distanceX) >= Math.abs(distanceY);
+            boolean volumeControl = mOldX > windowWidth * 4.0 / 5;
+
+            //歌曲进度滑动
+            if (seekTo) {
+                onProgressSlide(-deltaX / mVideoIjkplayer.getWidth());
+            } else {
+                float percent = deltaY / mVideoIjkplayer.getHeight();
+
+                //右边音量改变
+                if (volumeControl) {// 右边滑动
+                    Log.i(TAG, "onScroll: 右边滑动===>" + (mOldY - y) / windowHeight);
+                    onVolumeSlide(percent);
+                } else {// 左边亮度滑动
+                    onBrightnessSlide(percent);
+                    Log.i(TAG, "onScroll: 右边滑动===>" + (mOldY - y) / windowHeight);
+                }
+            }
+
 
             return super.onScroll(e1, e2, distanceX, distanceY);
         }
+
     }
 
     /**
-     * 定时隐藏
+     * 左右滑动切换进度条
+     *
+     * @param percent
      */
-    private Handler mDismissHandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            volumeControllerContainer.setVisibility(View.GONE);
-            brightnessControllerContainer.setVisibility(View.GONE);
+    private void onProgressSlide(float percent) {
+        int position = (int) mVideoIjkplayer.getCurrentPosition();
+        int duration = (int) mVideoIjkplayer.getDuration();
+        int deltaMax = Math.min(200, duration - position);
+        int delta = (int) (deltaMax * percent);
+
+        newPosition = delta + position;
+        if (newPosition > duration) {
+            newPosition = duration;
+        } else if (newPosition <= 0) {
+            newPosition = 0;
+            delta = -position;
         }
-    };
+        int showDelta = delta;
+        if (showDelta != 0) {//显示中间进度文本显示
+            mLayoutQuery.id(R.id.app_video_fastForward_box).visible();
+            String text = showDelta > 0 ? ("+" + showDelta) : "" + showDelta;
+            mLayoutQuery.id(R.id.app_video_fastForward).text(text + "s");
+            mLayoutQuery.id(R.id.app_video_fastForward_target).text(StringsUtil.millisToText(newPosition) + "/");
+            mLayoutQuery.id(R.id.app_video_fastForward_all).text(StringsUtil.millisToText(duration));
+        }
+    }
 
     /**
      * 滑动改变声音大小
@@ -517,7 +620,6 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
                 mVolume = 0;
 
             // 显示
-            //mOperationBg.setImageResource(R.drawable.video_volumn_bg);
             volumeControllerContainer.setVisibility(View.VISIBLE);
         }
 
@@ -535,7 +637,7 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
                 * index / mMaxVolume;
         mOperationPercent.setLayoutParams(lp);*/
         volumeControllerSeekBar.setMax(mMaxVolume);
-        volumeControllerSeekBar.setProgress(mVolume);
+        volumeControllerSeekBar.setProgress(index);
     }
 
     /**
@@ -563,17 +665,51 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
             lpa.screenBrightness = 0.01f;
         getWindow().setAttributes(lpa);
 
-        try {
-            int maxBrightvalue=Settings.System.getInt(getContentResolver(),Settings.System.SCREEN_BRIGHTNESS);
-            brightnessControllerSeekbar.setMax(maxBrightvalue);
-            brightnessControllerSeekbar.setProgress((int) mBrightness);
-        } catch (Settings.SettingNotFoundException e) {
-            e.printStackTrace();
-        }
+        brightnessControllerSeekbar.setMax(100);
+        brightnessControllerSeekbar.setProgress((int) (lpa.screenBrightness*100));
+        Log.i(TAG, "onTouchEvent: ===>当前亮度" + lpa.screenBrightness);
+
        /* ViewGroup.LayoutParams lp = mOperationPercent.getLayoutParams();
         lp.width = (int) (findViewById(R.id.operation_full).getLayoutParams().width * lpa.screenBrightness);
         mOperationPercent.setLayoutParams(lp);*/
     }
+
     ///////////////////////////////手势滑动监听////////////////////////////////////end//////////////////////
+
+    @Override protected void onRestart() {
+        super.onRestart();
+    }
+
+    @Override protected void onStart() {
+        super.onStart();
+    }
+
+    @Override protected void onPause() {
+        super.onPause();
+        mVideoIjkplayer.pause();
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+    }
+
+    @Override protected void onStop() {
+        super.onStop();
+        mVideoIjkplayer.stop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (mHandler != null) {
+            mHandler.removeMessages(0);
+            mHandler.removeMessages(1);
+            mHandler.removeMessages(2);
+
+        }
+        //取消音源焦点
+        mAudioManager.abandonAudioFocus(this);
+        mVideoIjkplayer.release();
+    }
 
 }

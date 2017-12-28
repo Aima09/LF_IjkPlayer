@@ -28,7 +28,7 @@ public class VideoAdapter extends BaseQuickAdapter<VideoInfo> {
 
     @Override protected void convert(BaseViewHolder baseViewHolder, VideoInfo media) {
         baseViewHolder.setText(R.id.video_name,media.getTitle());
-        GlideApp.with(mContext).load(media.getThumbPath()).transition(DrawableTransitionOptions.withCrossFade()).into((ImageView) baseViewHolder.getView(R.id.video_cover_image));
+        GlideApp.with(mContext).load(media.getThumbPath()).transition(DrawableTransitionOptions.withCrossFade()).error(R.mipmap.video_cover).into((ImageView) baseViewHolder.getView(R.id.video_cover_image));
 
     }
 }

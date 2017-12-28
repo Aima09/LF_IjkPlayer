@@ -27,7 +27,7 @@ import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
 
-public class Strings {
+public class StringsUtil {
 
     public static String stripTrailingSlash(String s) {
         if (s.endsWith("/") && s.length() > 1)
@@ -56,7 +56,7 @@ public class Strings {
      * @return formated string (hh:)mm:ss
      */
     public static String millisToString(long millis) {
-        return Strings.millisToString(millis, false);
+        return StringsUtil.millisToString(millis, false);
     }
 
     /**
@@ -66,7 +66,7 @@ public class Strings {
      * @return formated string "[hh]h[mm]min" / "[mm]min[s]s"
      */
     public static String millisToText(long millis) {
-        return Strings.millisToString(millis, false);
+        return StringsUtil.millisToString(millis, false);
     }
 
     static String millisToString(long millis, boolean text) {
@@ -151,5 +151,21 @@ public class Strings {
             return path.substring(7);
         else
             return path;
+    }
+    /**
+     * 求当前数的百分比
+     *
+     * @param current
+     * @param max
+     * @return
+     */
+    public static String numberFormatPercent(int current, int max) {
+        NumberFormat numberFormat = NumberFormat.getInstance();
+
+        // 设置精确到小数点后0位
+        numberFormat.setMaximumFractionDigits(0);
+        //  numberFormat.format((float) current / (float) max * 100);
+        String result = numberFormat.format((float) current / (float) max * 100);
+        return result;
     }
 }
