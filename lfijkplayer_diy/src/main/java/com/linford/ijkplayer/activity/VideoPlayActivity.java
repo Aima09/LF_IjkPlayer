@@ -60,6 +60,8 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
             VerticalSeekBar volumeControllerSeekBar;
     @BindView(R.id.brightness_controller_seekbar)//亮度进度条
             VerticalSeekBar brightnessControllerSeekbar;
+    @BindView(R.id.video_thumb_cover) LinearLayout mVideoThumbCover;
+
 
     //底部控制栏控件
     @BindView(R.id.ijkplayer_bottom_bar)//底部控制栏根布局
@@ -113,7 +115,7 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
         mVideoIjkplayer.setVideoPlayerListener(this);
         //音乐进度条事件监听注册
         mAppVideoSeekBar.setOnSeekBarChangeListener(this);
-        mGestureDetector = new GestureDetector(this, new VideoPlayActivity.MyGestureListener());
+        mGestureDetector = new GestureDetector(this, new MyGestureListener());
 
     }
 
@@ -134,8 +136,18 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
         //mVideoIjkplayer.start();
         mHandler.sendEmptyMessage(1);
         //初始化视频进度条和文本显示
-        mAppVideoSeekBar.setMax((int) mVideoIjkplayer.getDuration());
-        mAppVideoSeekBar.setProgress((int) mVideoIjkplayer.getCurrentPosition());
+        mAppVideoSeekBar.setMax(1000);
+        long position = mVideoIjkplayer.getCurrentPosition();
+        long duration = mVideoIjkplayer.getDuration();
+        if (mAppVideoSeekBar != null) {
+            if (duration > 0) {
+                long pos = 1000L * position / duration;
+                mAppVideoSeekBar.setProgress((int) pos);
+            }
+            int percent = mVideoIjkplayer.getBufferPercentage();
+            mAppVideoSeekBar.setSecondaryProgress(percent * 10);
+        }
+
         mAppVideoEndTime.setText(StringsUtil.millisToText(mVideoIjkplayer.getDuration()));
         mAppVideoCurrentTime.setText(StringsUtil.millisToText(mVideoIjkplayer.getCurrentPosition()));
 
@@ -302,10 +314,17 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
             @Override
             public void run() {
                 if (mVideoIjkplayer.isPlaying()) {
-                    int position = (int) mVideoIjkplayer.getCurrentPosition();
+                    long position = mVideoIjkplayer.getCurrentPosition();
+                    long duration = mVideoIjkplayer.getDuration();
+                    if (mAppVideoSeekBar != null) {
+                        if (duration > 0) {
+                            long pos = 1000L * position / duration;
+                            mAppVideoSeekBar.setProgress((int) pos);
+                        }
+                        int percent = mVideoIjkplayer.getBufferPercentage();
+                        mAppVideoSeekBar.setSecondaryProgress(percent * 10);
+                    }
                     // Log.i(TAG, "run: 更新音乐进度条===>"+position);
-                    mAppVideoSeekBar.setProgress(position);
-                    //mTipsProgress.setProgress(currentProgress);
                     //显示当前视频进度文本
                     mAppVideoCurrentTime.setText(StringsUtil.millisToText(position));
                 }
@@ -388,11 +407,12 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
     @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         switch (seekBar.getId()) {
             case R.id.app_video_seekBar:
-                if (!fromUser) {//一定要判断一下是否用户操作,否则进度条会自己拖动
+                if (!fromUser) {//一定要判断一下是否用户操作,否则进度条会自己拖动,吃了它的大坑!
                     return;
                 }
-                // int newPosition = (int) ((mVideoIjkplayer.getDuration() * progress * 1.0) / 100);
-                mVideoIjkplayer.seekTo(progress);
+                long duration = mVideoIjkplayer.getDuration();
+                int position = (int) ((duration * progress * 1.0) / 1000);
+                mVideoIjkplayer.seekTo(position);
                 break;
         }
 
@@ -406,7 +426,8 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
     public void onStopTrackingTouch(SeekBar seekBar) {
         switch (seekBar.getId()) {
             case R.id.app_video_seekBar:
-                mVideoIjkplayer.seekTo(seekBar.getProgress());
+                long duration = mVideoIjkplayer.getDuration();
+                mVideoIjkplayer.seekTo((int) ((duration * seekBar.getProgress() * 1.0) / 1000));
                 break;
         }
     }
@@ -525,19 +546,7 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
                 mVideoIjkplayer.start();
             }
             mHandler.sendEmptyMessage(2);
-//            if(mDisplayAspectRatio == PLVideoTextureView.ASPECT_RATIO_FIT_PARENT){
-//                mDisplayAspectRatio = PLVideoTextureView.ASPECT_RATIO_PAVED_PARENT;
-//            }else {
-//                mDisplayAspectRatio = PLVideoTextureView.ASPECT_RATIO_FIT_PARENT;
-//            }
-//
-//            if (mVideoView != null) mVideoView.setDisplayAspectRatio(mDisplayAspectRatio);
-////            if (mLayout == VideoView.VIDEO_LAYOUT_ZOOM)
-////                mLayout = VideoView.VIDEO_LAYOUT_ORIGIN;
-////            else
-//                mLayout++;
-//            if (mVideoView != null)
-//                mVideoView.setVideoLayout(mLayout, 0);
+
             return true;
         }
 
@@ -588,10 +597,9 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
      */
     private void onProgressSlide(float percent) {
         int position = (int) mVideoIjkplayer.getCurrentPosition();
-        int duration = (int) mVideoIjkplayer.getDuration();
-        int deltaMax = Math.min(200, duration - position);
-        int delta = (int) (deltaMax * percent);
-
+        long duration = mVideoIjkplayer.getDuration();
+        long deltaMax = Math.min(100 * 1000, duration - position);
+        long delta = (long) (deltaMax * percent);
         newPosition = delta + position;
         if (newPosition > duration) {
             newPosition = duration;
@@ -599,7 +607,7 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
             newPosition = 0;
             delta = -position;
         }
-        int showDelta = delta;
+        int showDelta = (int) delta / 1000;
         if (showDelta != 0) {//显示中间进度文本显示
             mLayoutQuery.id(R.id.app_video_fastForward_box).visible();
             String text = showDelta > 0 ? ("+" + showDelta) : "" + showDelta;
@@ -669,7 +677,7 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
         getWindow().setAttributes(lpa);
 
         brightnessControllerSeekbar.setMax(100);
-        brightnessControllerSeekbar.setProgress((int) (lpa.screenBrightness*100));
+        brightnessControllerSeekbar.setProgress((int) (lpa.screenBrightness * 100));
         Log.i(TAG, "onTouchEvent: ===>当前亮度" + lpa.screenBrightness);
 
        /* ViewGroup.LayoutParams lp = mOperationPercent.getLayoutParams();
@@ -696,7 +704,7 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
 
     @Override protected void onResume() {
         super.onResume();
-        if (mVideoIjkplayer!=null){
+        if (mVideoIjkplayer != null) {
             mVideoIjkplayer.reset();
         }
     }

@@ -10,6 +10,7 @@ import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.widget.FrameLayout;
+import android.widget.MediaController;
 
 import com.linford.ijkplayer.listener.VideoPlayerListener;
 
@@ -23,7 +24,7 @@ import tv.danmaku.ijk.media.player.IjkMediaPlayer;
  * Created by GuoShaoHong on 2017/7/25.
  */
 
-public class LFIjkPlayer extends FrameLayout {
+public class LFIjkPlayer extends FrameLayout implements MediaController.MediaPlayerControl,VideoPlayerListener{
 
     /**
      * 由ijkplayer提供，用于播放视频，需要给他传入一个surfaceView
@@ -40,6 +41,7 @@ public class LFIjkPlayer extends FrameLayout {
     private VideoPlayerListener listener;
     private Context mContext;
 
+    private int BufferPercentage;
     public LFIjkPlayer(@NonNull Context context) {
         super(context);
         initVideoView(context);
@@ -92,6 +94,7 @@ public class LFIjkPlayer extends FrameLayout {
         surfaceView.setLayoutParams(layoutParams);
         this.addView(surfaceView);
     }
+
 
     /**
      * surfaceView的监听器
@@ -202,34 +205,89 @@ public class LFIjkPlayer extends FrameLayout {
     public boolean isPlaying() {
         return mMediaPlayer!=null?mMediaPlayer.isPlaying():false;
     }
+
+    @Override public int getBufferPercentage() {
+        return BufferPercentage;
+    }
+
+    @Override public boolean canPause() {
+        return false;
+    }
+
+    @Override public boolean canSeekBackward() {
+        return false;
+    }
+
+    @Override public boolean canSeekForward() {
+        return false;
+    }
+
+    @Override public int getAudioSessionId() {
+        return 0;
+    }
+
     public void reset() {
         if (mMediaPlayer != null) {
             mMediaPlayer.reset();
         }
     }
 
-
-    public long getDuration() {
+    @Override
+    public int getDuration() {
         if (mMediaPlayer != null) {
-            return mMediaPlayer.getDuration();
+            return (int) mMediaPlayer.getDuration();
         } else {
             return 0;
         }
     }
 
-
-    public long getCurrentPosition() {
+    @Override
+    public int getCurrentPosition() {
         if (mMediaPlayer != null) {
-            return mMediaPlayer.getCurrentPosition();
+            return (int) mMediaPlayer.getCurrentPosition();
         } else {
             return 0;
         }
     }
 
-
-    public void seekTo(long l) {
+    @Override public void seekTo(int pos) {
         if (mMediaPlayer != null) {
-            mMediaPlayer.seekTo(l);
+            mMediaPlayer.seekTo(pos);
         }
     }
+ ////////////////////////////////////////接口实现//////////////////////////////////////////////////
+
+    @Override public void onPrepared(IMediaPlayer mp) {
+
+    }
+
+    @Override public void onCompletion(IMediaPlayer mp) {
+
+    }
+
+    /**
+     * 返回缓冲进度
+     * @param mp
+     * @param percent
+     */
+    @Override public void onBufferingUpdate(IMediaPlayer mp, int percent) {
+        BufferPercentage=percent;
+    }
+
+    @Override public void onSeekComplete(IMediaPlayer mp) {
+
+    }
+
+    @Override public void onVideoSizeChanged(IMediaPlayer mp, int width, int height, int sar_num, int sar_den) {
+
+    }
+
+    @Override public boolean onError(IMediaPlayer mp, int what, int extra) {
+        return false;
+    }
+
+    @Override public boolean onInfo(IMediaPlayer mp, int what, int extra) {
+        return false;
+    }
+
 }

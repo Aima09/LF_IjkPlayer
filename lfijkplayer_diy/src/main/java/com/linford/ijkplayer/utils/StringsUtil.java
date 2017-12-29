@@ -160,6 +160,7 @@ public class StringsUtil {
      * @return
      */
     public static String numberFormatPercent(int current, int max) {
+
         NumberFormat numberFormat = NumberFormat.getInstance();
 
         // 设置精确到小数点后0位
@@ -167,5 +168,16 @@ public class StringsUtil {
         //  numberFormat.format((float) current / (float) max * 100);
         String result = numberFormat.format((float) current / (float) max * 100);
         return result;
+    }
+
+    /**
+     * 时长格式化显示
+     */
+    private String generateTime(long time) {
+        int totalSeconds = (int) (time / 1000);
+        int seconds = totalSeconds % 60;
+        int minutes = (totalSeconds / 60) % 60;
+        int hours = totalSeconds / 3600;
+        return hours > 0 ? String.format("%02d:%02d:%02d", hours, minutes, seconds) : String.format("%02d:%02d", minutes, seconds);
     }
 }
