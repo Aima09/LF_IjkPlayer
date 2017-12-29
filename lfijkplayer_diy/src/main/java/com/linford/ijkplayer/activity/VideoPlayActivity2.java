@@ -1,3 +1,4 @@
+/*
 package com.linford.ijkplayer.activity;
 
 import android.os.Bundle;
@@ -42,3 +43,4 @@ public class VideoPlayActivity2 extends AppCompatActivity {
         return super.onTouchEvent(event);
     }
 }
+*/

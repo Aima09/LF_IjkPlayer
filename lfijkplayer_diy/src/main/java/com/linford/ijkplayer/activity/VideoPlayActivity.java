@@ -2,15 +2,19 @@ package com.linford.ijkplayer.activity;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.pm.ActivityInfo;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -60,7 +64,8 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
             VerticalSeekBar volumeControllerSeekBar;
     @BindView(R.id.brightness_controller_seekbar)//亮度进度条
             VerticalSeekBar brightnessControllerSeekbar;
-    @BindView(R.id.video_thumb_cover) LinearLayout mVideoThumbCover;
+    @BindView(R.id.video_thumb_cover)
+    LinearLayout mVideoThumbCover;
 
 
     //底部控制栏控件
@@ -74,7 +79,10 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
             TextView mAppVideoCurrentTime;
     @BindView(R.id.app_video_endTime)//总播放总进度
             TextView mAppVideoEndTime;
-    @BindView(R.id.video_back) ImageView mVideoBack;
+    @BindView(R.id.video_back)
+    ImageView mVideoBack;
+    @BindView(R.id.ijk_iv_rotation)
+    ImageView ijkIvRotation;
 
     //最大音量
     private int mMaxVolume;
@@ -89,6 +97,10 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
     private LayoutQuery mLayoutQuery;
     private AudioManager mAudioManager;
     private GestureDetector mGestureDetector;
+
+    //旋转方向
+    private boolean fullScreenOnly;
+    private boolean portrait;
 
     //视频填充样式
     private static final int FILL_MODE_ADAPT = 0;
@@ -117,6 +129,10 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
         mAppVideoSeekBar.setOnSeekBarChangeListener(this);
         mGestureDetector = new GestureDetector(this, new MyGestureListener());
 
+        if (fullScreenOnly) {
+            this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+        portrait = getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
     }
 
     /**
@@ -157,7 +173,8 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
     private void initControllView() {
         //为的是点击屏幕后,上下控制栏都会消失,设置底部事件后可以延迟消失
         mIjkplayerBottomBar.setOnTouchListener(new View.OnTouchListener() {
-            @Override public boolean onTouch(View v, MotionEvent event) {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
                 delay6Second();
                 return true;
             }
@@ -245,7 +262,8 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
      *
      * @param focusChange
      */
-    @Override public void onAudioFocusChange(int focusChange) {
+    @Override
+    public void onAudioFocusChange(int focusChange) {
         switch (focusChange) {
             case AudioManager.AUDIOFOCUS_GAIN:
                 break;
@@ -332,7 +350,7 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
         });
     }
 
-    @OnClick({R.id.app_video_play, R.id.play_icon, R.id.video_back})
+    @OnClick({R.id.app_video_play, R.id.play_icon, R.id.video_back,R.id.ijk_iv_rotation})
     public void onViewClicked(View view) {
         switch (view.getId()) {
             case R.id.app_video_play:
@@ -354,35 +372,45 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
             case R.id.video_back:
                 finish();
                 break;
+            case R.id.ijk_iv_rotation:
+                //fullChangeScreen();
+                getScreenOrientation();
+                break;
         }
     }
 
     /////////////////////////////////Ijkplayer播放器回调的监听////////////////////////////////////////////////
 
-    @Override public void onPrepared(IMediaPlayer mp) {
+    @Override
+    public void onPrepared(IMediaPlayer mp) {
         //每隔0.5秒更新视屏界面信息，如进度条，当前播放时间点等等
         // startPlay();
         MediaStart();
     }
 
 
-    @Override public void onCompletion(IMediaPlayer mp) {
+    @Override
+    public void onCompletion(IMediaPlayer mp) {
 
     }
 
-    @Override public void onBufferingUpdate(IMediaPlayer mp, int percent) {
+    @Override
+    public void onBufferingUpdate(IMediaPlayer mp, int percent) {
 
     }
 
-    @Override public void onSeekComplete(IMediaPlayer mp) {
+    @Override
+    public void onSeekComplete(IMediaPlayer mp) {
 
     }
 
-    @Override public void onVideoSizeChanged(IMediaPlayer mp, int width, int height, int sar_num, int sar_den) {
+    @Override
+    public void onVideoSizeChanged(IMediaPlayer mp, int width, int height, int sar_num, int sar_den) {
 
     }
 
-    @Override public boolean onError(IMediaPlayer mp, int what, int extra) {
+    @Override
+    public boolean onError(IMediaPlayer mp, int what, int extra) {
         return false;
     }
 
@@ -395,7 +423,8 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
     int MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK = 200;//数据错误没有有效的回收
 
 
-    @Override public boolean onInfo(IMediaPlayer mp, int what, int extra) {
+    @Override
+    public boolean onInfo(IMediaPlayer mp, int what, int extra) {
 
         return false;
     }
@@ -404,7 +433,8 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
 
 
     ///////////////////////////////进度条监听事件////////////////////////////////////start/////////////////////
-    @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         switch (seekBar.getId()) {
             case R.id.app_video_seekBar:
                 if (!fromUser) {//一定要判断一下是否用户操作,否则进度条会自己拖动,吃了它的大坑!
@@ -418,7 +448,8 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
 
     }
 
-    @Override public void onStartTrackingTouch(SeekBar seekBar) {
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
 
     }
 
@@ -519,6 +550,7 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
     }
 
 
+
     /**
      * 定义手势监听类
      */
@@ -529,7 +561,8 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
          * @param e
          * @return
          */
-        @Override public boolean onSingleTapUp(MotionEvent e) {
+        @Override
+        public boolean onSingleTapUp(MotionEvent e) {
             refreshVideoControlUI(mIjkplayerBottomBar.getVisibility() == View.VISIBLE ? View.INVISIBLE
                     : View.VISIBLE);
             return super.onSingleTapUp(e);
@@ -680,36 +713,137 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
         brightnessControllerSeekbar.setProgress((int) (lpa.screenBrightness * 100));
         Log.i(TAG, "onTouchEvent: ===>当前亮度" + lpa.screenBrightness);
 
-       /* ViewGroup.LayoutParams lp = mOperationPercent.getLayoutParams();
-        lp.width = (int) (findViewById(R.id.operation_full).getLayoutParams().width * lpa.screenBrightness);
-        mOperationPercent.setLayoutParams(lp);*/
+
     }
 
     ///////////////////////////////手势滑动监听////////////////////////////////////end//////////////////////
+    //////////////////////////////////////////屏幕旋转//////////////////////////////start///////////////////
+    private int getScreenOrientation() {
+        int rotation = this.getWindowManager().getDefaultDisplay().getRotation();
+        DisplayMetrics dm = new DisplayMetrics();
+        this.getWindowManager().getDefaultDisplay().getMetrics(dm);
+        int width = dm.widthPixels;
+        int height = dm.heightPixels;
+        int orientation;
+        // if the device's natural orientation is portrait:
+        if ((rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) && height > width ||
+                (rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270) && width > height) {
+            switch (rotation) {
+                case Surface.ROTATION_0:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                    break;
+                case Surface.ROTATION_90:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                    break;
+                case Surface.ROTATION_180:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT;
+                    break;
+                case Surface.ROTATION_270:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+                    break;
+                default:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                    break;
+            }
+        }
+        // if the device's natural orientation is landscape or if the device
+        // is square:
+        else {
+            switch (rotation) {
+                case Surface.ROTATION_0:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                    break;
+                case Surface.ROTATION_90:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                    break;
+                case Surface.ROTATION_180:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+                    break;
+                case Surface.ROTATION_270:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT;
+                    break;
+                default:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                    break;
+            }
+        }
+        return orientation;
+    }
 
-    @Override protected void onRestart() {
+    public void setFullScreenOnly(boolean fullScreenOnly) {
+        this.fullScreenOnly = fullScreenOnly;
+        tryFullScreen(fullScreenOnly);
+        if (fullScreenOnly) {
+            this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        } else {
+            this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+        }
+    }
+
+    private void tryFullScreen(boolean fullScreen) {
+        if (this instanceof AppCompatActivity) {
+            ActionBar supportActionBar = ((AppCompatActivity) this).getSupportActionBar();
+            if (supportActionBar != null) {
+                if (fullScreen) {
+                    supportActionBar.hide();
+                } else {
+                    supportActionBar.show();
+                }
+            }
+        }
+        setFullScreen(fullScreen);
+    }
+
+    private void setFullScreen(boolean fullScreen) {
+        if (this != null) {
+            WindowManager.LayoutParams attrs = this.getWindow().getAttributes();
+            if (fullScreen) {
+                attrs.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+                this.getWindow().setAttributes(attrs);
+                this.getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            } else {
+                attrs.flags &= (~WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                this.getWindow().setAttributes(attrs);
+                this.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            }
+        }
+    }
+    private void fullChangeScreen() {
+        if (getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {// 切换为竖屏
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        } else {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+    }
+    //////////////////////////////////////////屏幕旋转//////////////////////////////end///////////////////
+    @Override
+    protected void onRestart() {
         super.onRestart();
     }
 
-    @Override protected void onStart() {
+    @Override
+    protected void onStart() {
         super.onStart();
     }
 
-    @Override protected void onPause() {
+    @Override
+    protected void onPause() {
         super.onPause();
         if (mVideoIjkplayer.isPlaying()) {
             mVideoIjkplayer.pause();
         }
     }
 
-    @Override protected void onResume() {
+    @Override
+    protected void onResume() {
         super.onResume();
         if (mVideoIjkplayer != null) {
             mVideoIjkplayer.reset();
         }
     }
 
-    @Override protected void onStop() {
+    @Override
+    protected void onStop() {
         super.onStop();
         if (mVideoIjkplayer.isPlaying()) {
             mVideoIjkplayer.stop();
