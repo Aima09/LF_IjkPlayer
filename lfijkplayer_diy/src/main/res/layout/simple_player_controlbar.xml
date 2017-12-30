@@ -22,7 +22,7 @@
         android:layout_marginLeft="5dp"
         android:layout_marginRight="5dp"
         android:padding="8dp"
-        android:src="@drawable/video_next"/>
+        android:src="@mipmap/video_next"/>
 
 
 
