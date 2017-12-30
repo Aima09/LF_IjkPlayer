@@ -117,6 +117,7 @@ public class PlayStateParams {
     public static final int MEDIA_INFO_VIDEO_ROTATION_CHANGED = 10001;//视频方向改变
     public static final int MEDIA_INFO_AUDIO_RENDERING_START = 10002;//音频开始整备中
 
+    public static final int MEDIA_ERROR_IJK_PLAYER = -10000;//一般是视频源有问题或者数据格式不支持，比如音频不是AAC之类的
     public static final int MEDIA_ERROR_UNKNOWN = 1;//未知错误
     public static final int MEDIA_ERROR_SERVER_DIED = 100;//服务挂掉
     public static final int MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK = 200;//数据错误没有有效的回收
@@ -125,5 +126,26 @@ public class PlayStateParams {
     public static final int MEDIA_ERROR_UNSUPPORTED = -1010;//数据不支持
     public static final int MEDIA_ERROR_TIMED_OUT = -110;//数据超时
     /**====================ijk状态码表 结束=================================*/
+
+
+
+    /**
+     * 同步进度
+     */
+    public static final int MESSAGE_SHOW_PROGRESS = 1;
+    /**
+     * 设置新位置
+     */
+    public static final int MESSAGE_SEEK_NEW_POSITION = 3;
+    /**
+     * 隐藏提示的box
+     */
+    public static final int MESSAGE_HIDE_CENTER_BOX = 4;
+    /**
+     * 重新播放
+     */
+    public static final int MESSAGE_RESTART_PLAY = 5;
+
+
 
 }

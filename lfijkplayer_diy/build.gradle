@@ -22,12 +22,15 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
-
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['libs', 'src/main/jniLibs']
+        }
+    }
 }
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-
     implementation 'com.android.support:appcompat-v7:26.1.0'
     implementation 'com.android.support.constraint:constraint-layout:1.0.2'
     testImplementation 'junit:junit:4.12'
@@ -49,10 +52,12 @@ dependencies {
     compile 'com.android.support:multidex:1.0.2'
 
 
+    //基于BiliBili框架的ijkplayer
     compile project(':ijkplayer-java')
     compile project(':ijkplayer-armv5')
     compile project(':ijkplayer-armv7a')
     compile project(':ijkplayer-arm64')
     compile project(':ijkplayer-x86')
     compile project(':ijkplayer-x86_64')
+    compile project(path: ':ijkplayer-exo')
 }

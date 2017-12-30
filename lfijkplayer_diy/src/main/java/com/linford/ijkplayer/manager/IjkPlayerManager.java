@@ -3,13 +3,18 @@ package com.linford.ijkplayer.manager;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.pm.ActivityInfo;
 import android.media.AudioManager;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AppCompatActivity;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
+import android.view.Surface;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
@@ -26,56 +31,65 @@ import com.linford.ijkplayer.view.LFIjkPlayer;
 import com.linford.ijkplayer.view.LayoutQuery;
 import com.linford.ijkplayer.view.VerticalSeekBar;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
-import butterknife.OnClick;
 import tv.danmaku.ijk.media.player.IMediaPlayer;
+
+import static com.linford.ijkplayer.view.PlayStateParams.MESSAGE_HIDE_CENTER_BOX;
+import static com.linford.ijkplayer.view.PlayStateParams.MESSAGE_SEEK_NEW_POSITION;
 
 /**
  * Created by LinFord on 2017/12/29 .
  * 用于界面管理
+ *  IMediaPlayer.OnCompletionListener, IMediaPlayer.OnPreparedListener, IMediaPlayer.OnInfoListener,  IMediaPlayer.OnErrorListener, IMediaPlayer.OnSeekCompleteListener,
  */
 
-public class IjkPlayerManager implements VideoPlayerListener, SeekBar.OnSeekBarChangeListener, AudioManager.OnAudioFocusChangeListener{
-    public static final String TAG="IjkPlayerManager";
-    @BindView(R.id.ijkPlayer)
-    LFIjkPlayer mVideoIjkplayer;//播放器控件
+public class IjkPlayerManager implements View.OnClickListener,VideoPlayerListener, SeekBar.OnSeekBarChangeListener, AudioManager.OnAudioFocusChangeListener {
 
+    public static final String TAG = "IjkPlayerManager";
+   // @BindView(R.id.ijkPlayer)
+   LFIjkPlayer mVideoIjkplayer;//播放器控件
+  //  IjkVideoView mVideoIjkplayer;
     //顶部控制栏控件
-    @BindView(R.id.ijkplayer_top_bar)//顶部控制栏根布局
-            LinearLayout mIjkplayerTopBar;
-    @BindView(R.id.app_video_title)//视频标题
-            TextView mAppVideoTitle;
+    //  @BindView(R.id.ijkplayer_top_bar)//顶部控制栏根布局
+    LinearLayout mIjkplayerTopBar;
+    //  @BindView(R.id.app_video_title)//视频标题
+    TextView mAppVideoTitle;
 
     //中间控件
-    @BindView(R.id.play_icon)//中间播放/暂停的图标
-            ImageView mPlayIcon;
-    @BindView(R.id.app_video_box)
+    //  @BindView(R.id.play_icon)//中间播放/暂停的图标
+    ImageView mPlayIcon;
+    //   @BindView(R.id.app_video_box)
     RelativeLayout mAppVideoBox;//根布局
-    @BindView(R.id.iv_trumb)//封面
-            ImageView mIvTrumb;
-    @BindView(R.id.volume_controller_container)//音量控制布局
-            LinearLayout volumeControllerContainer;
-    @BindView(R.id.brightness_controller_container)//亮度控制布局
-            LinearLayout brightnessControllerContainer;
-    @BindView(R.id.volume_controller_seekBar)//音量进度条
-            VerticalSeekBar volumeControllerSeekBar;
-    @BindView(R.id.brightness_controller_seekbar)//亮度进度条
-            VerticalSeekBar brightnessControllerSeekbar;
-    @BindView(R.id.video_thumb_cover) LinearLayout mVideoThumbCover;
+    //  @BindView(R.id.iv_trumb)//封面
+    ImageView mIvTrumb;
+    //  @BindView(R.id.volume_controller_container)//音量控制布局
+    LinearLayout volumeControllerContainer;
+    //  @BindView(R.id.brightness_controller_container)//亮度控制布局
+    LinearLayout brightnessControllerContainer;
+    //   @BindView(R.id.volume_controller_seekBar)//音量进度条
+    VerticalSeekBar volumeControllerSeekBar;
+    //   @BindView(R.id.brightness_controller_seekbar)//亮度进度条
+    VerticalSeekBar brightnessControllerSeekbar;
+    // @BindView(R.id.video_thumb_cover)
+    LinearLayout mVideoThumbCover;
 
     //底部控制栏控件
-    @BindView(R.id.ijkplayer_bottom_bar)//底部控制栏根布局
-            LinearLayout mIjkplayerBottomBar;
-    @BindView(R.id.app_video_play)//顶部暂停/播放按钮
-            ImageView mAppVideoPlay;
-    @BindView(R.id.app_video_seekBar)//视频播放进度条
-            SeekBar mAppVideoSeekBar;
-    @BindView(R.id.app_video_currentTime)//当前播放进度显示
-            TextView mAppVideoCurrentTime;
-    @BindView(R.id.app_video_endTime)//总播放总进度
-            TextView mAppVideoEndTime;
-    @BindView(R.id.video_back) ImageView mVideoBack;
+    //  @BindView(R.id.ijkplayer_bottom_bar)//底部控制栏根布局
+    LinearLayout mIjkplayerBottomBar;
+    // @BindView(R.id.app_video_play)//顶部暂停/播放按钮
+    ImageView mAppVideoPlay;
+    //  @BindView(R.id.app_video_seekBar)//视频播放进度条
+    SeekBar mAppVideoSeekBar;
+    // @BindView(R.id.app_video_currentTime)//当前播放进度显示
+    TextView mAppVideoCurrentTime;
+    //  @BindView(R.id.app_video_endTime)//总播放总进度
+    TextView mAppVideoEndTime;
+    // @BindView(R.id.video_back)
+    ImageView mVideoBack;
+    //旋转方向
+    private boolean fullScreenOnly;
+    private boolean portrait;
+
+
     //最大音量
     private int mMaxVolume;
     //当前音量
@@ -94,32 +108,45 @@ public class IjkPlayerManager implements VideoPlayerListener, SeekBar.OnSeekBarC
     private VideoPlayerListener listener;
     private String videoPath;
 
+
     public IjkPlayerManager(Activity acitivity) {
         this.mActivity = acitivity;
-        ButterKnife.bind(mActivity);
+        initViewListener();
     }
 
     private void initViewListener() {
-
-
-
-
-
-
-
-
-
-
-
-
+        mIjkplayerTopBar = mActivity.findViewById(R.id.ijkplayer_top_bar);
+        mAppVideoTitle = mActivity.findViewById(R.id.app_video_title);
+        mPlayIcon = mActivity.findViewById(R.id.play_icon);
+        mAppVideoBox = mActivity.findViewById(R.id.app_video_box);
+        mIvTrumb = mActivity.findViewById(R.id.iv_trumb);
+        volumeControllerContainer = mActivity.findViewById(R.id.volume_controller_container);
+        brightnessControllerContainer = mActivity.findViewById(R.id.brightness_controller_container);
+        volumeControllerSeekBar = mActivity.findViewById(R.id.volume_controller_seekBar);
+        brightnessControllerSeekbar = mActivity.findViewById(R.id.brightness_controller_seekbar);
+        mVideoThumbCover = mActivity.findViewById(R.id.video_thumb_cover);
+        mIjkplayerBottomBar = mActivity.findViewById(R.id.ijkplayer_bottom_bar);
+        mAppVideoPlay = mActivity.findViewById(R.id.app_video_play);
+        mAppVideoSeekBar = mActivity.findViewById(R.id.app_video_seekBar);
+        mAppVideoCurrentTime = mActivity.findViewById(R.id.app_video_currentTime);
+        mAppVideoEndTime = mActivity.findViewById(R.id.app_video_endTime);
+        mVideoBack = mActivity.findViewById(R.id.video_back);
+        mVideoIjkplayer = mActivity.findViewById(R.id.ijkPlayer);
+        mAppVideoPlay.setOnClickListener(this);
+        mPlayIcon.setOnClickListener(this);
+        mVideoBack.setOnClickListener(this);
 
 
         mLayoutQuery = new LayoutQuery(mActivity);
         mAudioManager = (AudioManager) mActivity.getSystemService(Context.AUDIO_SERVICE);
-       // startPlay();
+        // startPlay();
         //处理控制栏的显示
         initControllView();
         //注册监听事件
+//        mVideoIjkplayer.setOnPreparedListener(this);
+//        mVideoIjkplayer.setOnInfoListener(this);
+//        mVideoIjkplayer.setOnCompletionListener(this);
+//        mVideoIjkplayer.setOnErrorListener(this);
         mVideoIjkplayer.setVideoPlayerListener(this);
         //音乐进度件监听注册
         mAppVideoSeekBar.setOnSeekBarChangeListener(this);
@@ -127,10 +154,7 @@ public class IjkPlayerManager implements VideoPlayerListener, SeekBar.OnSeekBarC
 
     }
 
-
-
     private void MediaStart() {
-        //mVideoIjkplayer.start();
         mHandler.sendEmptyMessage(1);
         //初始化视频进度条和文本显示
         mAppVideoSeekBar.setMax(1000);
@@ -178,6 +202,7 @@ public class IjkPlayerManager implements VideoPlayerListener, SeekBar.OnSeekBarC
             mAppVideoPlay.requestFocus();
         }
     }
+
     /**
      * 根据发送过来的参数显示控制栏
      */
@@ -258,6 +283,7 @@ public class IjkPlayerManager implements VideoPlayerListener, SeekBar.OnSeekBarC
     }
 
     ///////////////////////////////音源焦点/////////////////////end///////////////////////////////////
+
     /**
      * 更新进度条
      */
@@ -284,9 +310,13 @@ public class IjkPlayerManager implements VideoPlayerListener, SeekBar.OnSeekBarC
         });
     }
 
-    @OnClick({R.id.app_video_play, R.id.play_icon, R.id.video_back})
-    public void onViewClicked(View view) {
-        switch (view.getId()) {
+    /**
+     * 点击事件
+     *
+     * @param v
+     */
+    @Override public void onClick(View v) {
+        switch (v.getId()) {
             case R.id.app_video_play:
                 if (mVideoIjkplayer.isPlaying()) {
                     mVideoIjkplayer.pause();
@@ -309,8 +339,15 @@ public class IjkPlayerManager implements VideoPlayerListener, SeekBar.OnSeekBarC
         }
     }
 
-    /////////////////////////////////Ijkplayer播放器回调的监听////////////////////////////////////////////////
 
+    /////////////////////////////////Ijkplayer播放器回调的监听////////////////////////////////////////////////
+    @Override public void onBufferingUpdate(IMediaPlayer mp, int percent) {
+
+    }
+
+    @Override public void onVideoSizeChanged(IMediaPlayer mp, int width, int height, int sar_num, int sar_den) {
+
+    }
     @Override public void onPrepared(IMediaPlayer mp) {
         //每隔0.5秒更新视屏界面信息，如进度条，当前播放时间点等等
         // startPlay();
@@ -322,23 +359,25 @@ public class IjkPlayerManager implements VideoPlayerListener, SeekBar.OnSeekBarC
 
     }
 
-    @Override public void onBufferingUpdate(IMediaPlayer mp, int percent) {
 
-    }
 
     @Override public void onSeekComplete(IMediaPlayer mp) {
 
     }
 
-    @Override public void onVideoSizeChanged(IMediaPlayer mp, int width, int height, int sar_num, int sar_den) {
-
-    }
 
     @Override public boolean onError(IMediaPlayer mp, int what, int extra) {
         return false;
     }
-    @Override public boolean onInfo(IMediaPlayer mp, int what, int extra) {
 
+//    private int MEDIA_INFO_VIDEO_RENDERING_START = 3;//视频准备渲染
+//    int MEDIA_INFO_BUFFERING_START = 701;//开始缓冲
+//    int MEDIA_INFO_BUFFERING_END = 702;//缓冲结束
+//    int MEDIA_INFO_VIDEO_ROTATION_CHANGED = 10001;//视频选择信息
+//    int MEDIA_ERROR_SERVER_DIED = 100;//视频中断，一般是视频源异常或者不支持的视频类型。
+//    int MEDIA_ERROR_IJK_PLAYER = -10000;//一般是视频源有问题或者数据格式不支持，比如音频不是AAC之类的
+//    int MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK = 200;//数据错误没有有效的回收
+    @Override public boolean onInfo(IMediaPlayer mp, int what, int extra) {
         return false;
     }
 
@@ -375,22 +414,7 @@ public class IjkPlayerManager implements VideoPlayerListener, SeekBar.OnSeekBarC
 
     ///////////////////////////////进度条监听事件//////////////////////////////////end////////////////////////////
 
-    /**
-     * 同步进度
-     */
-    private static final int MESSAGE_SHOW_PROGRESS = 1;
-    /**
-     * 设置新位置
-     */
-    private static final int MESSAGE_SEEK_NEW_POSITION = 3;
-    /**
-     * 隐藏提示的box
-     */
-    private static final int MESSAGE_HIDE_CENTER_BOX = 4;
-    /**
-     * 重新播放
-     */
-    private static final int MESSAGE_RESTART_PLAY = 5;
+
     /**
      * 定时隐藏
      */
@@ -416,6 +440,9 @@ public class IjkPlayerManager implements VideoPlayerListener, SeekBar.OnSeekBarC
             }
         }
     };
+
+
+
 
     /**
      * 定义手势监听类
@@ -575,20 +602,119 @@ public class IjkPlayerManager implements VideoPlayerListener, SeekBar.OnSeekBarC
         mActivity.getWindow().setAttributes(lpa);
 
         brightnessControllerSeekbar.setMax(100);
-        brightnessControllerSeekbar.setProgress((int) (lpa.screenBrightness*100));
+        brightnessControllerSeekbar.setProgress((int) (lpa.screenBrightness * 100));
         Log.i(TAG, "onTouchEvent: ===>当前亮度" + lpa.screenBrightness);
 
     }
 
     ///////////////////////////////手势滑动监听////////////////////////////////////end//////////////////////
+    //////////////////////////////////////////屏幕旋转//////////////////////////////start///////////////////
+    private int getScreenOrientation() {
+        int rotation = mActivity.getWindowManager().getDefaultDisplay().getRotation();
+        DisplayMetrics dm = new DisplayMetrics();
+        mActivity.getWindowManager().getDefaultDisplay().getMetrics(dm);
+        int width = dm.widthPixels;
+        int height = dm.heightPixels;
+        int orientation;
+        // if the device's natural orientation is portrait:
+        if ((rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_180) && height > width ||
+                (rotation == Surface.ROTATION_90 || rotation == Surface.ROTATION_270) && width > height) {
+            switch (rotation) {
+                case Surface.ROTATION_0:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                    break;
+                case Surface.ROTATION_90:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                    break;
+                case Surface.ROTATION_180:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT;
+                    break;
+                case Surface.ROTATION_270:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+                    break;
+                default:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                    break;
+            }
+        }
+        // if the device's natural orientation is landscape or if the device
+        // is square:
+        else {
+            switch (rotation) {
+                case Surface.ROTATION_0:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                    break;
+                case Surface.ROTATION_90:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+                    break;
+                case Surface.ROTATION_180:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE;
+                    break;
+                case Surface.ROTATION_270:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT;
+                    break;
+                default:
+                    orientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE;
+                    break;
+            }
+        }
+        return orientation;
+    }
 
+    public void setFullScreenOnly(boolean fullScreenOnly) {
+        this.fullScreenOnly = fullScreenOnly;
+        tryFullScreen(fullScreenOnly);
+        if (fullScreenOnly) {
+            mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        } else {
+            mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+        }
+    }
+
+    private void tryFullScreen(boolean fullScreen) {
+        if (mActivity instanceof AppCompatActivity) {
+            ActionBar supportActionBar = ((AppCompatActivity) mActivity).getSupportActionBar();
+            if (supportActionBar != null) {
+                if (fullScreen) {
+                    supportActionBar.hide();
+                } else {
+                    supportActionBar.show();
+                }
+            }
+        }
+        setFullScreen(fullScreen);
+    }
+
+    private void setFullScreen(boolean fullScreen) {
+        if (this != null) {
+            WindowManager.LayoutParams attrs = mActivity.getWindow().getAttributes();
+            if (fullScreen) {
+                attrs.flags |= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+                mActivity.getWindow().setAttributes(attrs);
+                mActivity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            } else {
+                attrs.flags &= (~WindowManager.LayoutParams.FLAG_FULLSCREEN);
+                mActivity.getWindow().setAttributes(attrs);
+                mActivity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+            }
+        }
+    }
+    private void fullChangeScreen() {
+        if (mActivity.getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {// 切换为竖屏
+            mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        } else {
+            mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+    }
+    //////////////////////////////////////////屏幕旋转//////////////////////////////end///////////////////
     ////////////////////////////////////提供外部接收数据的方法/////////////////////////////////////////////////
 
     /**
      * 获取手势
+     *
      * @return
      */
-    public GestureDetector getGestureDetector(){
+    public GestureDetector getGestureDetector() {
         return mGestureDetector;
     }
     /**
@@ -607,46 +733,52 @@ public class IjkPlayerManager implements VideoPlayerListener, SeekBar.OnSeekBarC
     /**
      * 播放
      */
-    public void startPlay(){
+    public void startPlay() {
+        //initViewListener();
         mVideoIjkplayer.setVideoPath(videoPath);
+        mVideoIjkplayer.start();
         mHandler.sendEmptyMessage(1);
         //获取音源焦点
         initAudioFocus();
-        initViewListener();
     }
 
     /**
      * 设置视频播放地址
+     *
      * @param videoPath
      */
-    public void setVideoPath(String videoPath){
-      this.videoPath=videoPath;
+    public void setVideoPath(String videoPath) {
+        this.videoPath = videoPath;
     }
+
     /**
      * 设置封面
+     *
      * @param thumbPath
      */
-    public void setThumbPath(String thumbPath){
+    public void setThumbPath(String thumbPath) {
         GlideApp.with(mActivity).asBitmap().load(thumbPath).into(mIvTrumb);
         mHandler.sendEmptyMessageDelayed(0, 2000);
     }
 
     /**
      * 设置标题
+     *
      * @param videoTitle
      */
-    public void setVideoTitle(String videoTitle){
+    public void setVideoTitle(String videoTitle) {
         mAppVideoTitle.setText(videoTitle);
     }
 
     /**
      * 提供视频回调外部接口
+     *
      * @param listener
      */
     public void setVideoPlayerCallBackListener(VideoPlayerListener listener) {
         this.listener = listener;
         if (mVideoIjkplayer != null) {
-            mVideoIjkplayer.setVideoPlayerListener(listener);
+            //mVideoIjkplayer.setVideoPlayerListener(listener);
         }
     }
 
@@ -666,5 +798,13 @@ public class IjkPlayerManager implements VideoPlayerListener, SeekBar.OnSeekBarC
         // 隐藏
         mDismissHandler.removeMessages(MESSAGE_HIDE_CENTER_BOX);
         mDismissHandler.sendEmptyMessageDelayed(MESSAGE_HIDE_CENTER_BOX, 500);
+    }
+
+    public boolean onBackPressed() {
+        if (!fullScreenOnly && getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+            mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+            return true;
+        }
+        return false;
     }
 }

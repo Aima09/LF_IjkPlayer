@@ -19,6 +19,7 @@
             <option value="$PROJECT_DIR$/lfijkplayer_diy" />
             <option value="$PROJECT_DIR$/lfijkplayer_zero" />
             <option value="$PROJECT_DIR$/lfijkplayerdemo" />
+            <option value="$PROJECT_DIR$/pldroid_playerdemo" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />

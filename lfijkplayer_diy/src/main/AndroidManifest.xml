@@ -45,6 +45,9 @@
     <!-- 系统亮度调节 -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS"/>
 
+
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -52,7 +55,9 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.AppCompat.Light.NoActionBar">
-        <activity android:name=".activity.MainActivity" android:exported="true">
+        <activity
+            android:name=".activity.MainActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
@@ -62,6 +67,8 @@
         <activity android:name=".activity.VideoPlayActivity">
         </activity>
         <activity android:name=".activity.VideoPlayActivity2">
+        </activity>
+        <activity android:name=".activity.VideoPalyerActivity3">
         </activity>
     </application>
 

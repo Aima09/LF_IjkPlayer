@@ -61,7 +61,7 @@
         android:layout_height="wrap_content"
         android:clickable="true"
         android:focusable="true"
-        android:padding="8dp"
+        android:padding="10dp"
         android:text="标清"
         android:textColor="@android:color/white"
         android:textSize="12dp"/>
@@ -70,14 +70,14 @@
         android:id="@+id/ijk_iv_rotation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:padding="8dp"
+        android:padding="10dp"
         android:src="@drawable/simple_player_iv_rotation"/>
 
     <ImageView
         android:id="@+id/app_video_fullscreen"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:padding="8dp"
+        android:padding="10dp"
         android:src="@drawable/simple_player_icon_fullscreen_stretch"/>
 
 </LinearLayout>

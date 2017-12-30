@@ -6,6 +6,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -19,6 +20,7 @@ import java.io.IOException;
 import tv.danmaku.ijk.media.player.IMediaPlayer;
 import tv.danmaku.ijk.media.player.IjkMediaPlayer;
 
+
 /**
  * 普通的视频播放器
  * Created by GuoShaoHong on 2017/7/25.
@@ -26,6 +28,7 @@ import tv.danmaku.ijk.media.player.IjkMediaPlayer;
 
 public class LFIjkPlayer extends FrameLayout implements MediaController.MediaPlayerControl,VideoPlayerListener{
 
+    public static final String TAG="LFIjkPlayer";
     /**
      * 由ijkplayer提供，用于播放视频，需要给他传入一个surfaceView
      */
@@ -40,7 +43,11 @@ public class LFIjkPlayer extends FrameLayout implements MediaController.MediaPla
 
     private VideoPlayerListener listener;
     private Context mContext;
-
+    /**
+     * 视频旋转角度
+     */
+    private int mVideoRotationDegree;
+    //获取缓冲进度条
     private int BufferPercentage;
     public LFIjkPlayer(@NonNull Context context) {
         super(context);
@@ -92,6 +99,8 @@ public class LFIjkPlayer extends FrameLayout implements MediaController.MediaPla
         LayoutParams layoutParams = new LayoutParams(LayoutParams.MATCH_PARENT
                 , LayoutParams.MATCH_PARENT, Gravity.CENTER);
         surfaceView.setLayoutParams(layoutParams);
+
+        setRotation(mVideoRotationDegree);
         this.addView(surfaceView);
     }
 
@@ -266,6 +275,15 @@ public class LFIjkPlayer extends FrameLayout implements MediaController.MediaPla
     }
 
     /**
+     * 设置旋转角度
+     */
+    public void setPlayerRotation(int rotation) {
+        mVideoRotationDegree = rotation;
+        if (surfaceView != null) {
+            surfaceView.setRotation(mVideoRotationDegree);
+        }
+    }
+    /**
      * 返回缓冲进度
      * @param mp
      * @param percent
@@ -287,7 +305,48 @@ public class LFIjkPlayer extends FrameLayout implements MediaController.MediaPla
     }
 
     @Override public boolean onInfo(IMediaPlayer mp, int what, int extra) {
-        return false;
+        switch (what) {
+            case IMediaPlayer.MEDIA_INFO_VIDEO_TRACK_LAGGING:
+                Log.d(TAG, "MEDIA_INFO_VIDEO_TRACK_LAGGING:");
+                break;
+            case IMediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START:
+                Log.d(TAG, "MEDIA_INFO_VIDEO_RENDERING_START:");
+                break;
+            case IMediaPlayer.MEDIA_INFO_BUFFERING_START:
+                Log.d(TAG, "MEDIA_INFO_BUFFERING_START:");
+                break;
+            case IMediaPlayer.MEDIA_INFO_BUFFERING_END:
+                Log.d(TAG, "MEDIA_INFO_BUFFERING_END:");
+                break;
+            case IMediaPlayer.MEDIA_INFO_NETWORK_BANDWIDTH:
+                Log.d(TAG, "MEDIA_INFO_NETWORK_BANDWIDTH: " + extra);
+                break;
+            case IMediaPlayer.MEDIA_INFO_BAD_INTERLEAVING:
+                Log.d(TAG, "MEDIA_INFO_BAD_INTERLEAVING:");
+                break;
+            case IMediaPlayer.MEDIA_INFO_NOT_SEEKABLE:
+                Log.d(TAG, "MEDIA_INFO_NOT_SEEKABLE:");
+                break;
+            case IMediaPlayer.MEDIA_INFO_METADATA_UPDATE:
+                Log.d(TAG, "MEDIA_INFO_METADATA_UPDATE:");
+                break;
+            case IMediaPlayer.MEDIA_INFO_UNSUPPORTED_SUBTITLE:
+                Log.d(TAG, "MEDIA_INFO_UNSUPPORTED_SUBTITLE:");
+                break;
+            case IMediaPlayer.MEDIA_INFO_SUBTITLE_TIMED_OUT:
+                Log.d(TAG, "MEDIA_INFO_SUBTITLE_TIMED_OUT:");
+                break;
+            case IMediaPlayer.MEDIA_INFO_VIDEO_ROTATION_CHANGED://获取视频旋转角度
+                mVideoRotationDegree = extra;
+                Log.d(TAG, "MEDIA_INFO_VIDEO_ROTATION_CHANGED: " + extra);
+                if (surfaceView != null)
+                    surfaceView.setRotation(extra);
+                break;
+            case IMediaPlayer.MEDIA_INFO_AUDIO_RENDERING_START:
+                Log.d(TAG, "MEDIA_INFO_AUDIO_RENDERING_START:");
+                break;
+        }
+        return true;
     }
 
 }

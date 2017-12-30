@@ -27,6 +27,7 @@ import com.linford.ijkplayer.R;
 import com.linford.ijkplayer.entity.VideoInfo;
 import com.linford.ijkplayer.listener.VideoPlayerListener;
 import com.linford.ijkplayer.utils.StringsUtil;
+import com.linford.ijkplayer.utils.ToastUtil;
 import com.linford.ijkplayer.view.LFIjkPlayer;
 import com.linford.ijkplayer.view.LayoutQuery;
 import com.linford.ijkplayer.view.VerticalSeekBar;
@@ -102,11 +103,7 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
     private boolean fullScreenOnly;
     private boolean portrait;
 
-    //视频填充样式
-    private static final int FILL_MODE_ADAPT = 0;
-    public static final int FILL_MODE_FILL = 1;
-    public static final int FILL_MODE_STRETCH = 2;
-    public static final int FILL_MODE_CENTER = 3;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -354,6 +351,7 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
     public void onViewClicked(View view) {
         switch (view.getId()) {
             case R.id.app_video_play:
+                ToastUtil.showShortToastTop("屏幕旋转!");
                 if (mVideoIjkplayer.isPlaying()) {
                     mVideoIjkplayer.pause();
                 } else {
@@ -373,8 +371,10 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
                 finish();
                 break;
             case R.id.ijk_iv_rotation:
-                //fullChangeScreen();
-                getScreenOrientation();
+                fullChangeScreen();
+                ToastUtil.showShortToastTop("屏幕旋转!");
+                Log.i(TAG, "onViewClicked: 屏幕旋转。。..。。。。。。。。。。。。。。");
+                //getScreenOrientation();
                 break;
         }
     }
@@ -414,18 +414,9 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
         return false;
     }
 
-    private int MEDIA_INFO_VIDEO_RENDERING_START = 3;//视频准备渲染
-    int MEDIA_INFO_BUFFERING_START = 701;//开始缓冲
-    int MEDIA_INFO_BUFFERING_END = 702;//缓冲结束
-    int MEDIA_INFO_VIDEO_ROTATION_CHANGED = 10001;//视频选择信息
-    int MEDIA_ERROR_SERVER_DIED = 100;//视频中断，一般是视频源异常或者不支持的视频类型。
-    int MEDIA_ERROR_IJK_PLAYER = -10000;//一般是视频源有问题或者数据格式不支持，比如音频不是AAC之类的
-    int MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK = 200;//数据错误没有有效的回收
-
 
     @Override
     public boolean onInfo(IMediaPlayer mp, int what, int extra) {
-
         return false;
     }
 
@@ -717,6 +708,7 @@ public class VideoPlayActivity extends AppCompatActivity implements VideoPlayerL
     }
 
     ///////////////////////////////手势滑动监听////////////////////////////////////end//////////////////////
+
     //////////////////////////////////////////屏幕旋转//////////////////////////////start///////////////////
     private int getScreenOrientation() {
         int rotation = this.getWindowManager().getDefaultDisplay().getRotation();
