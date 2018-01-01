@@ -123,6 +123,7 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     public IjkPlayerManager(Activity acitivity) {
         this.mActivity = acitivity;
         initViewListener();
+        portrait=getScreenOrientation()== ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
     }
 
     private void initViewListener() {
@@ -156,13 +157,11 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
         screenWidthPixels = mActivity.getResources().getDisplayMetrics().widthPixels;
         mLayoutQuery = new LayoutQuery(mActivity);
         mAudioManager = (AudioManager) mActivity.getSystemService(Context.AUDIO_SERVICE);
-        iMediaPlayer=mVideoIjkplayer.getIjkMediaPlayer();
         // startPlay();
         //处理控制栏的显示
         initControllView();
         //注册监听事件
 
-       // mVideoIjkplayer.setVideoPlayerListener(this);
         //音乐进度件监听注册
         mAppVideoSeekBar.setOnSeekBarChangeListener(this);
         mGestureDetector = new GestureDetector(mActivity, new MyGestureListener());
@@ -370,6 +369,9 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
 
     }
     @Override public void onPrepared(IMediaPlayer mp) {
+        //获取初始控件,用于测量控件用于旋转
+        iMediaPlayer=mp;
+
         //每隔0.5秒更新视屏界面信息，如进度条，当前播放时间点等等
         // startPlay();
         MediaStart();
@@ -727,8 +729,7 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
             sv_paramters.width = (int) screen_widthPixels;
             sv_paramters.height = (int) (screen_widthPixels / screen_por);
         }
-//        mRlVideo.setLayoutParams(rl_paramters);
-//        mSvVideo.setLayoutParams(sv_paramters);
+
     }
 
     public void onConfigurationChanged(Configuration newConfig) {
@@ -941,6 +942,8 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
         mDismissHandler.sendEmptyMessageDelayed(MESSAGE_HIDE_CENTER_BOX, 500);
     }
 
+    //////////////////////////////////////IjkPlayer播放器的声明周期控制////////////////////////////////////////////////////
+
     public boolean onBackPressed() {
         if (!fullScreenOnly && getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
             mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
@@ -975,6 +978,16 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
 
     public void onDestroy() {
        // orientationEventListener.disable();
-        mVideoIjkplayer.stop();
+        if (mHandler != null) {
+            mHandler.removeMessages(0);
+            mHandler.removeMessages(1);
+            mHandler.removeMessages(2);
+
+        }
+        //取消音源焦点
+        mAudioManager.abandonAudioFocus(this);
+        mVideoIjkplayer.release();
     }
+    //////////////////////////////////////IjkPlayer播放器的声明周期控制////////////////////////////////////////////////////
+
 }
