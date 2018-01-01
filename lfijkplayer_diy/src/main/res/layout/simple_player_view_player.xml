@@ -5,9 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
-
-
-   <!-- <com.linford.ijkplayer.widget.IjkVideoView
+<!--
+    <com.linford.ijkplayer.widget.IjkVideoView
         android:id="@+id/ijkPlayer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"/>-->

@@ -4,7 +4,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
-import android.content.res.Configuration;
 import android.media.AudioManager;
 import android.os.Handler;
 import android.os.Message;
@@ -15,9 +14,9 @@ import android.util.Log;
 import android.view.Display;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
+import android.view.OrientationEventListener;
 import android.view.Surface;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -26,17 +25,23 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.linford.ijkplayer.R;
-import com.linford.ijkplayer.listener.VideoPlayerListener;
 import com.linford.ijkplayer.utils.StringsUtil;
 import com.linford.ijkplayer.view.GlideApp;
-import com.linford.ijkplayer.view.LFIjkPlayer;
 import com.linford.ijkplayer.view.LayoutQuery;
 import com.linford.ijkplayer.view.VerticalSeekBar;
+import com.linford.ijkplayer.widget.IRenderView;
+import com.linford.ijkplayer.widget.IjkVideoView;
 
 import tv.danmaku.ijk.media.player.IMediaPlayer;
 
 import static com.linford.ijkplayer.view.PlayStateParams.MESSAGE_HIDE_CENTER_BOX;
 import static com.linford.ijkplayer.view.PlayStateParams.MESSAGE_SEEK_NEW_POSITION;
+import static com.linford.ijkplayer.view.PlayStateParams.SCALETYPE_16_9;
+import static com.linford.ijkplayer.view.PlayStateParams.SCALETYPE_4_3;
+import static com.linford.ijkplayer.view.PlayStateParams.SCALETYPE_FILLPARENT;
+import static com.linford.ijkplayer.view.PlayStateParams.SCALETYPE_FITPARENT;
+import static com.linford.ijkplayer.view.PlayStateParams.SCALETYPE_FITXY;
+import static com.linford.ijkplayer.view.PlayStateParams.SCALETYPE_WRAPCONTENT;
 import static com.linford.ijkplayer.view.PlayStateParams.STATUS_COMPLETED;
 import static com.linford.ijkplayer.view.PlayStateParams.STATUS_ERROR;
 import static com.linford.ijkplayer.view.PlayStateParams.STATUS_IDLE;
@@ -46,15 +51,15 @@ import static com.linford.ijkplayer.view.PlayStateParams.STATUS_PLAYING;
 /**
  * Created by LinFord on 2017/12/29 .
  * 用于界面管理
- *  IMediaPlayer.OnCompletionListener, IMediaPlayer.OnPreparedListener, IMediaPlayer.OnInfoListener,  IMediaPlayer.OnErrorListener, IMediaPlayer.OnSeekCompleteListener,
+ * IMediaPlayer.OnCompletionListener, IMediaPlayer.OnPreparedListener, IMediaPlayer.OnInfoListener,  IMediaPlayer.OnErrorListener, IMediaPlayer.OnSeekCompleteListener,
  */
 
-public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListener, SeekBar.OnSeekBarChangeListener, AudioManager.OnAudioFocusChangeListener {
+public class IjkPlayerManager2 implements View.OnClickListener, IMediaPlayer.OnCompletionListener, IMediaPlayer.OnPreparedListener, IMediaPlayer.OnInfoListener, IMediaPlayer.OnErrorListener, IMediaPlayer.OnSeekCompleteListener, SeekBar.OnSeekBarChangeListener, AudioManager.OnAudioFocusChangeListener {
 
     public static final String TAG = "IjkPlayerManager";
-   // @BindView(R.id.ijkPlayer)
-   LFIjkPlayer mVideoIjkplayer;//播放器控件
-    IMediaPlayer iMediaPlayer;
+    // @BindView(R.id.ijkPlayer)
+    // LFIjkPlayer mVideoIjkplayer;//播放器控件
+    IjkVideoView mVideoIjkplayer;
     //顶部控制栏控件
     //  @BindView(R.id.ijkplayer_top_bar)//顶部控制栏根布局
     LinearLayout mIjkplayerTopBar;
@@ -77,7 +82,7 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     //   @BindView(R.id.brightness_controller_seekbar)//亮度进度条
     VerticalSeekBar brightnessControllerSeekbar;
     // @BindView(R.id.video_thumb_cover)
-    LinearLayout mVideoThumbCover;
+    LinearLayout mVideoThumbCover;//封面显示
 
     //底部控制栏控件
     //  @BindView(R.id.ijkplayer_bottom_bar)//底部控制栏根布局
@@ -98,8 +103,7 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     private boolean fullScreenOnly;
     private boolean portrait;
     private int screenWidthPixels;
-    private int status=STATUS_IDLE;
-    private boolean isLive = false;//是否为直播
+    private int status = STATUS_IDLE;
 
     //最大音量
     private int mMaxVolume;
@@ -116,15 +120,25 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     private GestureDetector mGestureDetector;
 
     private Activity mActivity;
-    private VideoPlayerListener listener;
     private String videoPath;
+    private boolean isLive = false;//是否为直播
+    //屏幕旋转监听事件
+    private OrientationEventListener orientationEventListener;
 
-
-    public IjkPlayerManager(Activity acitivity) {
+    /**
+     * 构造初始化
+     * @param acitivity
+     */
+    public IjkPlayerManager2(Activity acitivity) {
         this.mActivity = acitivity;
+        mVideoIjkplayer = mActivity.findViewById(R.id.ijkPlayer);
         initViewListener();
+        portrait=getScreenOrientation()== ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
     }
 
+    /**
+     * 初始化View和事件
+     */
     private void initViewListener() {
         mIjkplayerTopBar = mActivity.findViewById(R.id.ijkplayer_top_bar);
         mAppVideoTitle = mActivity.findViewById(R.id.app_video_title);
@@ -142,33 +156,42 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
         mAppVideoCurrentTime = mActivity.findViewById(R.id.app_video_currentTime);
         mAppVideoEndTime = mActivity.findViewById(R.id.app_video_endTime);
         mVideoBack = mActivity.findViewById(R.id.video_back);
-        videoFullScreen=mActivity.findViewById(R.id.app_video_fullscreen);
-        mVideoIjkplayer = mActivity.findViewById(R.id.ijkPlayer);
-        videoRotationScreen=mActivity.findViewById(R.id.ijk_iv_rotation);
+        videoFullScreen = mActivity.findViewById(R.id.app_video_fullscreen);
+        videoRotationScreen = mActivity.findViewById(R.id.ijk_iv_rotation);
 
         mAppVideoPlay.setOnClickListener(this);
         mPlayIcon.setOnClickListener(this);
         mVideoBack.setOnClickListener(this);
         videoFullScreen.setOnClickListener(this);
         videoRotationScreen.setOnClickListener(this);
-        mVideoIjkplayer.setVideoPlayerListener(this);
 
         screenWidthPixels = mActivity.getResources().getDisplayMetrics().widthPixels;
         mLayoutQuery = new LayoutQuery(mActivity);
         mAudioManager = (AudioManager) mActivity.getSystemService(Context.AUDIO_SERVICE);
-        iMediaPlayer=mVideoIjkplayer.getIjkMediaPlayer();
+        orientationEventListener = new OrientationEventListener(mActivity) {
+            @Override
+            public void onOrientationChanged(int orientation) {
+
+            }
+        };
         // startPlay();
         //处理控制栏的显示
         initControllView();
         //注册监听事件
-
-       // mVideoIjkplayer.setVideoPlayerListener(this);
+        mVideoIjkplayer.setOnPreparedListener(this);
+        mVideoIjkplayer.setOnInfoListener(this);
+        mVideoIjkplayer.setOnCompletionListener(this);
+        mVideoIjkplayer.setOnErrorListener(this);
+        // mVideoIjkplayer.setVideoPlayerListener(this);
         //音乐进度件监听注册
         mAppVideoSeekBar.setOnSeekBarChangeListener(this);
         mGestureDetector = new GestureDetector(mActivity, new MyGestureListener());
 
     }
 
+    /**
+     * 播放后初始化进度条显示(在onPreare执行)
+     */
     private void MediaStart() {
         mHandler.sendEmptyMessage(1);
         //初始化视频进度条和文本显示
@@ -193,7 +216,8 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     private void initControllView() {
         //为的是点击屏幕后,上下控制栏都会消失,设置底部事件后可以延迟消失
         mIjkplayerBottomBar.setOnTouchListener(new View.OnTouchListener() {
-            @Override public boolean onTouch(View v, MotionEvent event) {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
                 delay6Second();
                 return true;
             }
@@ -280,13 +304,15 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
      *
      * @param focusChange
      */
-    @Override public void onAudioFocusChange(int focusChange) {
+    @Override
+    public void onAudioFocusChange(int focusChange) {
         switch (focusChange) {
             case AudioManager.AUDIOFOCUS_GAIN:
                 break;
             case AudioManager.AUDIOFOCUS_LOSS:
                 // 长久的失去音频焦点，释放MediaPlayer
-                mVideoIjkplayer.stop();
+                //mVideoIjkplayer.stop();
+                mVideoIjkplayer.stopPlayback();
                 break;
             case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
                 // 暂时失去音频焦点，暂停播放等待重新获得音频焦点
@@ -330,7 +356,8 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
      *
      * @param v
      */
-    @Override public void onClick(View v) {
+    @Override
+    public void onClick(View v) {
         switch (v.getId()) {
             case R.id.app_video_play:
                 if (mVideoIjkplayer.isPlaying()) {
@@ -350,54 +377,57 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
                 break;
             case R.id.video_back:
                 mActivity.finish();
-                mVideoIjkplayer.stop();
+                mVideoIjkplayer.stopPlayback();
                 break;
             case R.id.ijk_iv_rotation:
                 fullChangeScreen();
                 break;
             case R.id.app_video_fullscreen:
+                toggleAspectRatio();
                 break;
         }
     }
 
 
     /////////////////////////////////Ijkplayer播放器回调的监听////////////////////////////////////////////////
-    @Override public void onBufferingUpdate(IMediaPlayer mp, int percent) {
 
-    }
-
-    @Override public void onVideoSizeChanged(IMediaPlayer mp, int width, int height, int sar_num, int sar_den) {
-
-    }
-    @Override public void onPrepared(IMediaPlayer mp) {
+    @Override
+    public void onPrepared(IMediaPlayer mp) {
         //每隔0.5秒更新视屏界面信息，如进度条，当前播放时间点等等
         // startPlay();
         MediaStart();
-        setVideoParams(mp,mActivity.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE);
-
     }
 
 
-    @Override public void onCompletion(IMediaPlayer mp) {
-
-    }
-
-
-
-    @Override public void onSeekComplete(IMediaPlayer mp) {
+    @Override
+    public void onCompletion(IMediaPlayer mp) {
         statusChange(STATUS_COMPLETED);
 
     }
 
 
-    @Override public boolean onError(IMediaPlayer mp, int what, int extra) {
+    @Override
+    public void onSeekComplete(IMediaPlayer mp) {
+
+    }
+
+
+    @Override
+    public boolean onError(IMediaPlayer mp, int what, int extra) {
         statusChange(STATUS_ERROR);
 
         return true;
     }
 
-
-    @Override public boolean onInfo(IMediaPlayer mp, int what, int extra) {
+    //    private int MEDIA_INFO_VIDEO_RENDERING_START = 3;//视频准备渲染
+//    int MEDIA_INFO_BUFFERING_START = 701;//开始缓冲
+//    int MEDIA_INFO_BUFFERING_END = 702;//缓冲结束
+//    int MEDIA_INFO_VIDEO_ROTATION_CHANGED = 10001;//视频选择信息
+//    int MEDIA_ERROR_SERVER_DIED = 100;//视频中断，一般是视频源异常或者不支持的视频类型。
+//    int MEDIA_ERROR_IJK_PLAYER = -10000;//一般是视频源有问题或者数据格式不支持，比如音频不是AAC之类的
+//    int MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK = 200;//数据错误没有有效的回收
+    @Override
+    public boolean onInfo(IMediaPlayer mp, int what, int extra) {
         switch (what) {
             case IMediaPlayer.MEDIA_INFO_BUFFERING_START:
                 statusChange(STATUS_LOADING);
@@ -418,55 +448,9 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
 
     /////////////////////////////////Ijkplayer播放器回调的监听//////////////////////end////////////////////////
 
-    ////////////////////////////////////供外部调用的播放状态的回调接口,在父类onInfo接口执行/////////////////////////
-    private void statusChange(int newStatus) {
-        status = newStatus;
-        if (!isLive && newStatus == STATUS_COMPLETED) {
-            Log.e(TAG, "statusChange STATUS_COMPLETED...");
-            if (playerStateListener != null) {
-                playerStateListener.onComplete();
-            }
-        } else if (newStatus == STATUS_ERROR) {
-            Log.e(TAG, "statusChange STATUS_ERROR...");
-            if (playerStateListener != null) {
-                playerStateListener.onError();
-            }
-        } else if (newStatus == STATUS_LOADING) {
-            //加载进度条显示
-            mLayoutQuery.id(R.id.app_video_loading).visible();
-            if (playerStateListener != null) {
-                playerStateListener.onLoading();
-            }
-            Log.e(TAG, "statusChange STATUS_LOADING...");
-        } else if (newStatus == STATUS_PLAYING) {
-            //加载进度条消失
-            mLayoutQuery.id(R.id.app_video_loading).invisible();
-            Log.e(TAG, "statusChange STATUS_PLAYING...");
-            if (playerStateListener != null) {
-                playerStateListener.onPlay();
-            }
-        }
-    }
-
-    private IjkPlayerManager.PlayerStateListener playerStateListener;
-
-    public void setPlayerStateListener(IjkPlayerManager.PlayerStateListener playerStateListener) {
-        this.playerStateListener = playerStateListener;
-    }
-
-    public interface PlayerStateListener {
-        void onComplete();
-
-        void onError();
-
-        void onLoading();
-
-        void onPlay();
-    }
-    ////////////////////////////////////供外部调用的播放状态的回调接口,与Ijkpayer的回调方法是间接关系(onInfo)/////////////////////////
-
     ///////////////////////////////进度条监听事件////////////////////////////////////start/////////////////////
-    @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
         switch (seekBar.getId()) {
             case R.id.app_video_seekBar:
                 if (!fromUser) {//一定要判断一下是否用户操作,否则进度条会自己拖动,吃了它的大坑!
@@ -480,7 +464,8 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
 
     }
 
-    @Override public void onStartTrackingTouch(SeekBar seekBar) {
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
 
     }
 
@@ -496,7 +481,6 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
 
     ///////////////////////////////进度条监听事件//////////////////////////////////end////////////////////////////
 
-    ///////////////////////////////手势滑动监听////////////////////////////////////start//////////////////////
 
     /**
      * 定时隐藏
@@ -524,6 +508,7 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
         }
     };
 
+
     /**
      * 定义手势监听类
      */
@@ -534,7 +519,8 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
          * @param e
          * @return
          */
-        @Override public boolean onSingleTapUp(MotionEvent e) {
+        @Override
+        public boolean onSingleTapUp(MotionEvent e) {
             refreshVideoControlUI(mIjkplayerBottomBar.getVisibility() == View.VISIBLE ? View.INVISIBLE
                     : View.VISIBLE);
             return super.onSingleTapUp(e);
@@ -688,60 +674,7 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     }
 
     ///////////////////////////////手势滑动监听////////////////////////////////////end//////////////////////
-    /**
-     * 设置SurfaceView的参数
-     *横竖屏幕切换
-     * @param mediaPlayer
-     * @param isLand
-     */
-    public void setVideoParams(IMediaPlayer mediaPlayer, boolean isLand) {
-        //获取surfaceView父布局的参数
-        ViewGroup.LayoutParams rl_paramters =mVideoIjkplayer.getSurfaceView().getLayoutParams();
-        //获取SurfaceView的参数
-        ViewGroup.LayoutParams sv_paramters = mVideoIjkplayer.getSurfaceView().getLayoutParams();
-        //设置宽高比为16/9
-        float screen_widthPixels = mActivity.getResources().getDisplayMetrics().widthPixels;
-        float screen_heightPixels = mActivity.getResources().getDisplayMetrics().widthPixels * 9f / 16f;
-        //取消全屏
-        mActivity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        if (isLand) {
-            screen_heightPixels = mActivity.getResources().getDisplayMetrics().heightPixels;
-            //设置全屏
-            mActivity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        }
-        rl_paramters.width = (int) screen_widthPixels;
-        rl_paramters.height = (int) screen_heightPixels;
 
-        //获取MediaPlayer的宽高
-        int videoWidth = mediaPlayer.getVideoWidth();
-        int videoHeight = mediaPlayer.getVideoHeight();
-
-        float video_por = videoWidth / videoHeight;
-        float screen_por = screen_widthPixels / screen_heightPixels;
-        //16:9    16:12
-        if (screen_por > video_por) {
-            sv_paramters.height = (int) screen_heightPixels;
-            sv_paramters.width = (int) (screen_heightPixels * screen_por);
-        } else {
-            //16:9  19:9
-            sv_paramters.width = (int) screen_widthPixels;
-            sv_paramters.height = (int) (screen_widthPixels / screen_por);
-        }
-//        mRlVideo.setLayoutParams(rl_paramters);
-//        mSvVideo.setLayoutParams(sv_paramters);
-    }
-
-    public void onConfigurationChanged(Configuration newConfig) {
-        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            mHandler.sendEmptyMessage(2);
-            //变成横屏了
-            setVideoParams(iMediaPlayer, true);
-        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            mHandler.sendEmptyMessage(2);
-            //变成竖屏了
-            setVideoParams(iMediaPlayer, false);
-        }
-    }
     //////////////////////////////////////////屏幕旋转//////////////////////////////start///////////////////
     private int getScreenOrientation() {
         int rotation = mActivity.getWindowManager().getDefaultDisplay().getRotation();
@@ -834,20 +767,14 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
         }
     }
 
-    /**
-     * 屏幕旋转
-     */
     private void fullChangeScreen() {
         if (mActivity.getRequestedOrientation() == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {// 切换为竖屏
-            mHandler.sendEmptyMessage(2);
             mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         } else {
-            mHandler.sendEmptyMessage(2);
             mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
     }
     //////////////////////////////////////////屏幕旋转//////////////////////////////end///////////////////
-
     ////////////////////////////////////提供外部接收数据的方法/////////////////////////////////////////////////
 
     /**
@@ -874,7 +801,7 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     /**
      * 播放
      */
-    public void startPlay() {
+    public void play() {
         //initViewListener();
         mVideoIjkplayer.setVideoPath(videoPath);
         mVideoIjkplayer.start();
@@ -912,18 +839,6 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     }
 
     /**
-     * 提供视频回调外部接口
-     *
-     * @param listener
-     */
-    public void setVideoPlayerCallBackListener(VideoPlayerListener listener) {
-        this.listener = listener;
-        if (mVideoIjkplayer != null) {
-            //mVideoIjkplayer.setVideoPlayerListener(listener);
-        }
-    }
-
-    /**
      * 手势结束
      */
     public void endGesture() {
@@ -941,7 +856,12 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
         mDismissHandler.sendEmptyMessageDelayed(MESSAGE_HIDE_CENTER_BOX, 500);
     }
 
+    /**
+     * 当点击设备回退按钮时调用
+     * @return
+     */
     public boolean onBackPressed() {
+        mVideoIjkplayer.pause();
         if (!fullScreenOnly && getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
             mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
             return true;
@@ -949,6 +869,97 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
         return false;
     }
 
+    /**
+     * 改变视频播放比例
+     *
+     * @return
+     */
+    public IjkPlayerManager2 toggleAspectRatio() {
+        if (mVideoIjkplayer != null) {
+            mVideoIjkplayer.toggleAspectRatio();
+        }
+        return this;
+    }
+
+    /**
+     * 指定视频比例
+     * <pre>
+     *     fitParent:可能会剪裁,保持原视频的大小，显示在中心,当原视频的大小超过view的大小超过部分裁剪处理
+     *     fillParent:可能会剪裁,等比例放大视频，直到填满View为止,超过View的部分作裁剪处理
+     *     wrapContent:将视频的内容完整居中显示，如果视频大于view,则按比例缩视频直到完全显示在view中
+     *     fitXY:不剪裁,非等比例拉伸画面填满整个View
+     *     16:9:不剪裁,非等比例拉伸画面到16:9,并完全显示在View中
+     *     4:3:不剪裁,非等比例拉伸画面到4:3,并完全显示在View中
+     * </pre>
+     *
+     * @param scaleType
+     */
+    public void setScaleType(String scaleType) {
+        if (SCALETYPE_FITPARENT.equals(scaleType)) {
+            mVideoIjkplayer.setAspectRatio(IRenderView.AR_ASPECT_FIT_PARENT);
+        } else if (SCALETYPE_FILLPARENT.equals(scaleType)) {
+            mVideoIjkplayer.setAspectRatio(IRenderView.AR_ASPECT_FILL_PARENT);
+        } else if (SCALETYPE_WRAPCONTENT.equals(scaleType)) {
+            mVideoIjkplayer.setAspectRatio(IRenderView.AR_ASPECT_WRAP_CONTENT);
+        } else if (SCALETYPE_FITXY.equals(scaleType)) {
+            mVideoIjkplayer.setAspectRatio(IRenderView.AR_MATCH_PARENT);
+        } else if (SCALETYPE_16_9.equals(scaleType)) {
+            mVideoIjkplayer.setAspectRatio(IRenderView.AR_16_9_FIT_PARENT);
+        } else if (SCALETYPE_4_3.equals(scaleType)) {
+            mVideoIjkplayer.setAspectRatio(IRenderView.AR_4_3_FIT_PARENT);
+        }
+    }
+
+
+    ////////////////////////////////////供外部调用的播放状态的回调接口,在父类onInfo接口执行/////////////////////////
+    private void statusChange(int newStatus) {
+        status = newStatus;
+        if (!isLive && newStatus == STATUS_COMPLETED) {
+            Log.e(TAG, "statusChange STATUS_COMPLETED...");
+            if (playerStateListener != null) {
+                playerStateListener.onComplete();
+            }
+        } else if (newStatus == STATUS_ERROR) {
+            Log.e(TAG, "statusChange STATUS_ERROR...");
+            if (playerStateListener != null) {
+                playerStateListener.onError();
+            }
+        } else if (newStatus == STATUS_LOADING) {
+            //加载进度条显示
+            mLayoutQuery.id(R.id.app_video_loading).visible();
+            if (playerStateListener != null) {
+                playerStateListener.onLoading();
+            }
+            Log.e(TAG, "statusChange STATUS_LOADING...");
+        } else if (newStatus == STATUS_PLAYING) {
+            //加载进度条消失
+            mLayoutQuery.id(R.id.app_video_loading).invisible();
+            Log.e(TAG, "statusChange STATUS_PLAYING...");
+            if (playerStateListener != null) {
+                playerStateListener.onPlay();
+            }
+        }
+    }
+
+    private PlayerStateListener playerStateListener;
+
+    public void setPlayerStateListener(PlayerStateListener playerStateListener) {
+        this.playerStateListener = playerStateListener;
+    }
+
+    public interface PlayerStateListener {
+        void onComplete();
+
+        void onError();
+
+        void onLoading();
+
+        void onPlay();
+    }
+    ////////////////////////////////////供外部调用的播放状态的回调接口,与Ijkpayer的回调方法是间接关系(onInfo)/////////////////////////
+
+
+    //////////////////////////////////////IjkPlayer播放器的声明周期控制////////////////////////////////////////////////////
     public void onPause() {
         if (status == STATUS_PLAYING) {
             mVideoIjkplayer.pause();
@@ -960,7 +971,6 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
         long position = mVideoIjkplayer.getCurrentPosition();
         long duration = mVideoIjkplayer.getDuration();
         if (status == STATUS_PLAYING) {
-            boolean isLive=false;
             if (isLive) {
                 mVideoIjkplayer.seekTo(0);
             } else {
@@ -974,7 +984,9 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     }
 
     public void onDestroy() {
-       // orientationEventListener.disable();
-        mVideoIjkplayer.stop();
+        orientationEventListener.disable();
+        mVideoIjkplayer.stopPlayback();
     }
+    //////////////////////////////////////IjkPlayer播放器的声明周期控制////////////////////////////////////////////////////
+
 }

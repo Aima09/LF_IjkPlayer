@@ -52,21 +52,25 @@ public class LFIjkPlayer extends FrameLayout implements MediaController.MediaPla
     public LFIjkPlayer(@NonNull Context context) {
         super(context);
         initVideoView(context);
+        createSurfaceView();
     }
 
     public LFIjkPlayer(@NonNull Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         initVideoView(context);
+        createSurfaceView();
+
     }
 
     public LFIjkPlayer(@NonNull Context context, @Nullable AttributeSet attrs, @AttrRes int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         initVideoView(context);
+        createSurfaceView();
+
     }
 
     private void initVideoView(Context context) {
         mContext = context;
-
         //获取焦点，不知道有没有必要~。~
         setFocusable(true);
     }
@@ -81,7 +85,7 @@ public class LFIjkPlayer extends FrameLayout implements MediaController.MediaPla
         if (TextUtils.equals("", mPath)) {
             //如果是第一次播放视频，那就创建一个新的surfaceView
             mPath = path;
-            createSurfaceView();
+           // createSurfaceView();
         } else {
             //否则就直接load
             mPath = path;
@@ -155,6 +159,8 @@ public class LFIjkPlayer extends FrameLayout implements MediaController.MediaPla
 
 //        //开启硬解码
         ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec", 1);
+        //设置视频倍速,解决音画不同步问题
+        ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "framedrop", 60);
 
         mMediaPlayer = ijkMediaPlayer;
 
@@ -170,6 +176,13 @@ public class LFIjkPlayer extends FrameLayout implements MediaController.MediaPla
     public SurfaceView getSurfaceView(){
         return surfaceView;
     }
+
+    public IMediaPlayer getIjkMediaPlayer(){
+        return mMediaPlayer;
+    }
+    //////////////////////////////屏幕旋转的实现/////////////////////////////////////////////////
+
+
     public void setVideoPlayerListener(VideoPlayerListener listener) {
         this.listener = listener;
         if (mMediaPlayer != null) {

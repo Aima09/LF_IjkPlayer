@@ -1,5 +1,6 @@
 package com.linford.ijkplayer.activity;
 
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.GestureDetector;
@@ -12,7 +13,8 @@ import com.linford.ijkplayer.manager.IjkPlayerManager;
 import butterknife.ButterKnife;
 
 public class VideoPlayActivity2 extends AppCompatActivity {
-//    @BindView(R.id.ijkPlayer) IjkVideoView mIjkPlayer;
+//    @BindView(R.id.ijkPlayer)
+//    IjkVideoView mIjkPlayer;
     private IjkPlayerManager mIjkPlayerManager;
     private GestureDetector mGestureDetector;
 
@@ -48,6 +50,36 @@ public class VideoPlayActivity2 extends AppCompatActivity {
         }
 
         return super.onTouchEvent(event);
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        mIjkPlayerManager.onConfigurationChanged(newConfig);
+    }
+
+        @Override
+    protected void onPause() {
+        super.onPause();
+        mIjkPlayerManager.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        mIjkPlayerManager.onResume();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mIjkPlayerManager.onDestroy();
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        mIjkPlayerManager.onBackPressed();
     }
 }
 
