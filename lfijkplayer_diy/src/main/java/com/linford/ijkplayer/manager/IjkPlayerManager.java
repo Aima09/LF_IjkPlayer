@@ -394,7 +394,6 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
 
     @Override public boolean onError(IMediaPlayer mp, int what, int extra) {
         statusChange(STATUS_ERROR);
-
         return true;
     }
 
@@ -424,6 +423,7 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     private void statusChange(int newStatus) {
         status = newStatus;
         if (!isLive && newStatus == STATUS_COMPLETED) {
+            mHandler.sendEmptyMessage(2);
             Log.e(TAG, "statusChange STATUS_COMPLETED...");
             if (playerStateListener != null) {
                 playerStateListener.onComplete();
@@ -859,19 +859,6 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     public GestureDetector getGestureDetector() {
         return mGestureDetector;
     }
-    /**
-     * 开始播放
-     */
-/*    private void startPlay() {
-        final VideoInfo videoInfo = mActivity.getIntent().getParcelableExtra("videoInfo");
-        mVideoIjkplayer.setVideoPath(videoInfo.getPath());
-        mAppVideoTitle.setText(videoInfo.getTitle());
-        mHandler.sendEmptyMessage(1);
-
-        //获取音源焦点
-        initAudioFocus();
-    }*/
-
     /**
      * 播放
      */
