@@ -8,13 +8,19 @@ import android.view.MotionEvent;
 
 import com.linford.ijkplayer.R;
 import com.linford.ijkplayer.entity.VideoInfo;
-import com.linford.ijkplayer.manager.IjkPlayerManager;
+import com.linford.ijkplayer.manager.IjkPlayerManager2;
+import com.linford.ijkplayer.widget.IjkVideoView;
 
+import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class VideoPlayActivity2 extends AppCompatActivity {
+import static com.linford.ijkplayer.view.PlayStateParams.SCALETYPE_FITXY;
 
-    private IjkPlayerManager mIjkPlayerManager;
+public class VideoPlayActivity3 extends AppCompatActivity {
+
+    @BindView(R.id.ijkPlayer)
+    IjkVideoView mIjkPlayer;
+    private IjkPlayerManager2 mIjkPlayerManager;
     private GestureDetector mGestureDetector;
 
     @Override
@@ -26,13 +32,15 @@ public class VideoPlayActivity2 extends AppCompatActivity {
     }
 
     private void initVideoPlay() {
-        mIjkPlayerManager = new IjkPlayerManager(VideoPlayActivity2.this);
+        mIjkPlayerManager = new IjkPlayerManager2(VideoPlayActivity3.this);
         mGestureDetector = mIjkPlayerManager.getGestureDetector();
         final VideoInfo videoInfo = this.getIntent().getParcelableExtra("videoInfo");
-
-        mIjkPlayerManager.setVideoPath(videoInfo.getPath());
-        mIjkPlayerManager.setVideoTitle(videoInfo.getTitle());
-        mIjkPlayerManager.startPlay();
+        mIjkPlayer.setVideoPath(videoInfo.getPath());
+        mIjkPlayerManager.setScaleType(SCALETYPE_FITXY);
+        mIjkPlayer.start();
+//        mIjkPlayerManager.setVideoPath(videoInfo.getPath());
+//        mIjkPlayerManager.setVideoTitle(videoInfo.getTitle());
+//        mIjkPlayerManager.startPlay();
     }
 
 
@@ -53,10 +61,10 @@ public class VideoPlayActivity2 extends AppCompatActivity {
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-        mIjkPlayerManager.onConfigurationChanged(newConfig);
+        //mIjkPlayerManager.onConfigurationChanged(newConfig);
     }
 
-        @Override
+    @Override
     protected void onPause() {
         super.onPause();
         mIjkPlayerManager.onPause();
@@ -80,4 +88,3 @@ public class VideoPlayActivity2 extends AppCompatActivity {
         mIjkPlayerManager.onBackPressed();
     }
 }
-

@@ -173,7 +173,7 @@ public class StringsUtil {
     /**
      * 时长格式化显示
      */
-    private String generateTime(long time) {
+    public static String generateTime(long time) {
         int totalSeconds = (int) (time / 1000);
         int seconds = totalSeconds % 60;
         int minutes = (totalSeconds / 60) % 60;

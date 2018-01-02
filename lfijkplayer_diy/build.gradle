@@ -51,7 +51,6 @@ dependencies {
     //避免重复引入library
     compile 'com.android.support:multidex:1.0.2'
 
-
     //基于BiliBili框架的ijkplayer
     compile project(':ijkplayer-java')
     compile project(':ijkplayer-armv5')

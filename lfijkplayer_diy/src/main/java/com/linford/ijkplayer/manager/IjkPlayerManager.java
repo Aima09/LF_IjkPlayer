@@ -46,14 +46,14 @@ import static com.linford.ijkplayer.view.PlayStateParams.STATUS_PLAYING;
 /**
  * Created by LinFord on 2017/12/29 .
  * 用于界面管理
- *  IMediaPlayer.OnCompletionListener, IMediaPlayer.OnPreparedListener, IMediaPlayer.OnInfoListener,  IMediaPlayer.OnErrorListener, IMediaPlayer.OnSeekCompleteListener,
+ * IMediaPlayer.OnCompletionListener, IMediaPlayer.OnPreparedListener, IMediaPlayer.OnInfoListener,  IMediaPlayer.OnErrorListener, IMediaPlayer.OnSeekCompleteListener,
  */
 
 public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListener, SeekBar.OnSeekBarChangeListener, AudioManager.OnAudioFocusChangeListener {
 
     public static final String TAG = "IjkPlayerManager";
-   // @BindView(R.id.ijkPlayer)
-   LFIjkPlayer mVideoIjkplayer;//播放器控件
+    // @BindView(R.id.ijkPlayer)
+    LFIjkPlayer mVideoIjkplayer;//播放器控件
     IMediaPlayer iMediaPlayer;
     //顶部控制栏控件
     //  @BindView(R.id.ijkplayer_top_bar)//顶部控制栏根布局
@@ -98,8 +98,9 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     private boolean fullScreenOnly;
     private boolean portrait;
     private int screenWidthPixels;
-    private int status=STATUS_IDLE;
+    private int status = STATUS_IDLE;
     private boolean isLive = false;//是否为直播
+    private int rotation = 0;
 
     //最大音量
     private int mMaxVolume;
@@ -123,7 +124,7 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     public IjkPlayerManager(Activity acitivity) {
         this.mActivity = acitivity;
         initViewListener();
-        portrait=getScreenOrientation()== ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+        portrait = getScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
     }
 
     private void initViewListener() {
@@ -143,9 +144,9 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
         mAppVideoCurrentTime = mActivity.findViewById(R.id.app_video_currentTime);
         mAppVideoEndTime = mActivity.findViewById(R.id.app_video_endTime);
         mVideoBack = mActivity.findViewById(R.id.video_back);
-        videoFullScreen=mActivity.findViewById(R.id.app_video_fullscreen);
+        videoFullScreen = mActivity.findViewById(R.id.app_video_fullscreen);
         mVideoIjkplayer = mActivity.findViewById(R.id.ijkPlayer);
-        videoRotationScreen=mActivity.findViewById(R.id.ijk_iv_rotation);
+        videoRotationScreen = mActivity.findViewById(R.id.ijk_iv_rotation);
 
         mAppVideoPlay.setOnClickListener(this);
         mPlayIcon.setOnClickListener(this);
@@ -174,17 +175,20 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
         mAppVideoSeekBar.setMax(1000);
         long position = mVideoIjkplayer.getCurrentPosition();
         long duration = mVideoIjkplayer.getDuration();
+        long pos = 1000L * position / duration;
         if (mAppVideoSeekBar != null) {
             if (duration > 0) {
-                long pos = 1000L * position / duration;
                 mAppVideoSeekBar.setProgress((int) pos);
             }
             int percent = mVideoIjkplayer.getBufferPercentage();
             mAppVideoSeekBar.setSecondaryProgress(percent * 10);
         }
-
-        mAppVideoEndTime.setText(StringsUtil.millisToText(mVideoIjkplayer.getDuration()));
-        mAppVideoCurrentTime.setText(StringsUtil.millisToText(mVideoIjkplayer.getCurrentPosition()));
+        if (position>0){
+            mAppVideoCurrentTime.setText(StringsUtil.generateTime(position));
+        }else{
+            mAppVideoCurrentTime.setText(StringsUtil.generateTime(0));
+        }
+        mAppVideoEndTime.setText(StringsUtil.millisToText(duration));
 
     }
 
@@ -352,7 +356,9 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
                 mVideoIjkplayer.stop();
                 break;
             case R.id.ijk_iv_rotation:
+                Log.i(TAG, "onClick: 屏幕旋转");
                 fullChangeScreen();
+              //  setPlayerRotation();
                 break;
             case R.id.app_video_fullscreen:
                 break;
@@ -368,14 +374,15 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     @Override public void onVideoSizeChanged(IMediaPlayer mp, int width, int height, int sar_num, int sar_den) {
 
     }
+
     @Override public void onPrepared(IMediaPlayer mp) {
         //获取初始控件,用于测量控件用于旋转
-        iMediaPlayer=mp;
+        iMediaPlayer = mp;
 
         //每隔0.5秒更新视屏界面信息，如进度条，当前播放时间点等等
         // startPlay();
         MediaStart();
-        setVideoParams(mp,mActivity.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE);
+        setVideoParams(mp, mActivity.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE);
 
     }
 
@@ -383,7 +390,6 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     @Override public void onCompletion(IMediaPlayer mp) {
 
     }
-
 
 
     @Override public void onSeekComplete(IMediaPlayer mp) {
@@ -476,6 +482,7 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
                 }
                 long duration = mVideoIjkplayer.getDuration();
                 int position = (int) ((duration * progress * 1.0) / 1000);
+                mAppVideoCurrentTime.setText(StringsUtil.generateTime(position));
                 mVideoIjkplayer.seekTo(position);
                 break;
         }
@@ -539,6 +546,7 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
         @Override public boolean onSingleTapUp(MotionEvent e) {
             refreshVideoControlUI(mIjkplayerBottomBar.getVisibility() == View.VISIBLE ? View.INVISIBLE
                     : View.VISIBLE);
+            //mHandler.sendEmptyMessageDelayed(0, 10000);
             return super.onSingleTapUp(e);
         }
 
@@ -690,15 +698,17 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     }
 
     ///////////////////////////////手势滑动监听////////////////////////////////////end//////////////////////
+
     /**
      * 设置SurfaceView的参数
-     *横竖屏幕切换
+     * 横竖屏幕切换
+     *
      * @param mediaPlayer
      * @param isLand
      */
     public void setVideoParams(IMediaPlayer mediaPlayer, boolean isLand) {
         //获取surfaceView父布局的参数
-        ViewGroup.LayoutParams rl_paramters =mVideoIjkplayer.getSurfaceView().getLayoutParams();
+        ViewGroup.LayoutParams rl_paramters = mVideoIjkplayer.getSurfaceView().getLayoutParams();
         //获取SurfaceView的参数
         ViewGroup.LayoutParams sv_paramters = mVideoIjkplayer.getSurfaceView().getLayoutParams();
         //设置宽高比为16/9
@@ -732,6 +742,10 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
 
     }
 
+    /**
+     * 切换与配置相反的屏幕角度(横竖屏切换)
+     * @param newConfig
+     */
     public void onConfigurationChanged(Configuration newConfig) {
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             mHandler.sendEmptyMessage(2);
@@ -743,6 +757,7 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
             setVideoParams(iMediaPlayer, false);
         }
     }
+
     //////////////////////////////////////////屏幕旋转//////////////////////////////start///////////////////
     private int getScreenOrientation() {
         int rotation = mActivity.getWindowManager().getDefaultDisplay().getRotation();
@@ -806,6 +821,10 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
         }
     }
 
+    /**
+     * 隐藏状态栏的全屏
+     * @param fullScreen
+     */
     private void tryFullScreen(boolean fullScreen) {
         if (mActivity instanceof AppCompatActivity) {
             ActionBar supportActionBar = ((AppCompatActivity) mActivity).getSupportActionBar();
@@ -820,6 +839,10 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
         setFullScreen(fullScreen);
     }
 
+    /**
+     * 视频播放全屏
+     * @param fullScreen
+     */
     private void setFullScreen(boolean fullScreen) {
         if (this != null) {
             WindowManager.LayoutParams attrs = mActivity.getWindow().getAttributes();
@@ -847,6 +870,29 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
             mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
     }
+
+    /**
+     * 旋转角度
+     */
+    public void setPlayerRotation() {
+        if (rotation == 0) {
+            rotation = 90;
+        } else if (rotation == 90) {
+            rotation = 270;
+        } else if (rotation == 270) {
+            rotation = 0;
+        }
+        setPlayerRotation(rotation);
+    }
+
+    /**
+     * 旋转指定角度
+     */
+    public void setPlayerRotation(int rotation) {
+        if (mVideoIjkplayer != null) {
+            mVideoIjkplayer.setPlayerRotation(rotation);
+        }
+    }
     //////////////////////////////////////////屏幕旋转//////////////////////////////end///////////////////
 
     ////////////////////////////////////提供外部接收数据的方法/////////////////////////////////////////////////
@@ -859,6 +905,7 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     public GestureDetector getGestureDetector() {
         return mGestureDetector;
     }
+
     /**
      * 播放
      */
@@ -950,7 +997,7 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
         long position = mVideoIjkplayer.getCurrentPosition();
         long duration = mVideoIjkplayer.getDuration();
         if (status == STATUS_PLAYING) {
-            boolean isLive=false;
+            boolean isLive = false;
             if (isLive) {
                 mVideoIjkplayer.seekTo(0);
             } else {
@@ -964,7 +1011,7 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
     }
 
     public void onDestroy() {
-       // orientationEventListener.disable();
+        // orientationEventListener.disable();
         if (mHandler != null) {
             mHandler.removeMessages(0);
             mHandler.removeMessages(1);

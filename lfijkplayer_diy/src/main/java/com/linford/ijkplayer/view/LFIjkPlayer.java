@@ -160,7 +160,7 @@ public class LFIjkPlayer extends FrameLayout implements MediaController.MediaPla
 //        //开启硬解码
         ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "mediacodec", 1);
         //设置视频倍速,解决音画不同步问题
-        ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "framedrop", 60);
+      //  ijkMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "framedrop", 60);
 
         mMediaPlayer = ijkMediaPlayer;
 

@@ -574,7 +574,15 @@ public class IjkVideoView extends FrameLayout implements MediaController.MediaPl
     public void setOnCompletionListener(IMediaPlayer.OnCompletionListener l) {
         mOnCompletionListener = l;
     }
-
+    /**
+     * 设置旋转角度
+     */
+    public void setPlayerRotation(int rotation) {
+        mVideoRotationDegree = rotation;
+        if (mRenderView != null) {
+            mRenderView.setVideoRotation(mVideoRotationDegree);
+        }
+    }
     /**
      * Register a callback to be invoked when an error occurs
      * during playback or setup.  If no listener is specified,

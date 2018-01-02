@@ -28,6 +28,7 @@ import com.linford.ijkplayer.R;
 import com.linford.ijkplayer.utils.StringsUtil;
 import com.linford.ijkplayer.view.GlideApp;
 import com.linford.ijkplayer.view.LayoutQuery;
+import com.linford.ijkplayer.view.PlayStateParams;
 import com.linford.ijkplayer.view.VerticalSeekBar;
 import com.linford.ijkplayer.widget.IRenderView;
 import com.linford.ijkplayer.widget.IjkVideoView;
@@ -104,7 +105,14 @@ public class IjkPlayerManager2 implements View.OnClickListener, IMediaPlayer.OnC
     private boolean portrait;
     private int screenWidthPixels;
     private int status = STATUS_IDLE;
-
+    /**
+     * 视频旋转的角度，默认只有0,90.270分别对应向上、向左、向右三个方向
+     */
+    private int rotation = 0;
+    /**
+     * 视频显示比例,默认保持原视频的大小
+     */
+    private String currentShowType = PlayStateParams.SCALETYPE_FITPARENT;
     //最大音量
     private int mMaxVolume;
     //当前音量
@@ -171,7 +179,18 @@ public class IjkPlayerManager2 implements View.OnClickListener, IMediaPlayer.OnC
         orientationEventListener = new OrientationEventListener(mActivity) {
             @Override
             public void onOrientationChanged(int orientation) {
-
+                if (orientation >= 0 && orientation <= 30 || orientation >= 330 || (orientation >= 150 && orientation <= 210)) {
+                    //竖屏
+                    if (portrait) {
+                        mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+                        orientationEventListener.disable();
+                    }
+                } else if ((orientation >= 90 && orientation <= 120) || (orientation >= 240 && orientation <= 300)) {
+                    if (!portrait) {
+                        mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
+                        orientationEventListener.disable();
+                    }
+                }
             }
         };
         // startPlay();
@@ -380,9 +399,12 @@ public class IjkPlayerManager2 implements View.OnClickListener, IMediaPlayer.OnC
                 mVideoIjkplayer.stopPlayback();
                 break;
             case R.id.ijk_iv_rotation:
-                fullChangeScreen();
+                Log.i(TAG, "onClick: 屏幕旋转切换............................");
+                //fullChangeScreen();
+                setPlayerRotation();
                 break;
             case R.id.app_video_fullscreen:
+                Log.i(TAG, "onClick: 屏幕比例切换............................");
                 toggleAspectRatio();
                 break;
         }
@@ -774,7 +796,33 @@ public class IjkPlayerManager2 implements View.OnClickListener, IMediaPlayer.OnC
             mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         }
     }
+
+    /**
+     * 旋转角度
+     */
+    public IjkPlayerManager2 setPlayerRotation() {
+        if (rotation == 0) {
+            rotation = 90;
+        } else if (rotation == 90) {
+            rotation = 270;
+        } else if (rotation == 270) {
+            rotation = 0;
+        }
+        setPlayerRotation(rotation);
+        return this;
+    }
+
+    /**
+     * 旋转指定角度
+     */
+    public IjkPlayerManager2 setPlayerRotation(int rotation) {
+        if (mVideoIjkplayer != null) {
+            mVideoIjkplayer.setPlayerRotation(rotation);
+        }
+        return this;
+    }
     //////////////////////////////////////////屏幕旋转//////////////////////////////end///////////////////
+
     ////////////////////////////////////提供外部接收数据的方法/////////////////////////////////////////////////
 
     /**
@@ -895,6 +943,7 @@ public class IjkPlayerManager2 implements View.OnClickListener, IMediaPlayer.OnC
      * @param scaleType
      */
     public void setScaleType(String scaleType) {
+        currentShowType=scaleType;
         if (SCALETYPE_FITPARENT.equals(scaleType)) {
             mVideoIjkplayer.setAspectRatio(IRenderView.AR_ASPECT_FIT_PARENT);
         } else if (SCALETYPE_FILLPARENT.equals(scaleType)) {
@@ -915,12 +964,12 @@ public class IjkPlayerManager2 implements View.OnClickListener, IMediaPlayer.OnC
     private void statusChange(int newStatus) {
         status = newStatus;
         if (!isLive && newStatus == STATUS_COMPLETED) {
-            Log.e(TAG, "statusChange STATUS_COMPLETED...");
+            Log.d(TAG, "statusChange STATUS_COMPLETED...");
             if (playerStateListener != null) {
                 playerStateListener.onComplete();
             }
         } else if (newStatus == STATUS_ERROR) {
-            Log.e(TAG, "statusChange STATUS_ERROR...");
+            Log.d(TAG, "statusChange STATUS_ERROR...");
             if (playerStateListener != null) {
                 playerStateListener.onError();
             }
@@ -930,11 +979,11 @@ public class IjkPlayerManager2 implements View.OnClickListener, IMediaPlayer.OnC
             if (playerStateListener != null) {
                 playerStateListener.onLoading();
             }
-            Log.e(TAG, "statusChange STATUS_LOADING...");
+            Log.d(TAG, "statusChange STATUS_LOADING...");
         } else if (newStatus == STATUS_PLAYING) {
             //加载进度条消失
             mLayoutQuery.id(R.id.app_video_loading).invisible();
-            Log.e(TAG, "statusChange STATUS_PLAYING...");
+            Log.d(TAG, "statusChange STATUS_PLAYING...");
             if (playerStateListener != null) {
                 playerStateListener.onPlay();
             }
@@ -963,7 +1012,6 @@ public class IjkPlayerManager2 implements View.OnClickListener, IMediaPlayer.OnC
     public void onPause() {
         if (status == STATUS_PLAYING) {
             mVideoIjkplayer.pause();
-
         }
     }
 
