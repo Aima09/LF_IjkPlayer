@@ -708,7 +708,7 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
      */
     public void setVideoParams(IMediaPlayer mediaPlayer, boolean isLand) {
         //获取surfaceView父布局的参数
-        ViewGroup.LayoutParams rl_paramters = mVideoIjkplayer.getSurfaceView().getLayoutParams();
+        ViewGroup.LayoutParams rl_paramters = mAppVideoBox.getLayoutParams();
         //获取SurfaceView的参数
         ViewGroup.LayoutParams sv_paramters = mVideoIjkplayer.getSurfaceView().getLayoutParams();
         //设置宽高比为16/9
