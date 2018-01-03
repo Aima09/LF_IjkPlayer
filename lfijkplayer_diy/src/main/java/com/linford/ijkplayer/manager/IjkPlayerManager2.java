@@ -400,8 +400,8 @@ public class IjkPlayerManager2 implements View.OnClickListener, IMediaPlayer.OnC
                 break;
             case R.id.ijk_iv_rotation:
                 Log.i(TAG, "onClick: 屏幕旋转切换............................");
-                //fullChangeScreen();
-                setPlayerRotation();
+                fullChangeScreen();
+               // setPlayerRotation();
                 break;
             case R.id.app_video_fullscreen:
                 Log.i(TAG, "onClick: 屏幕比例切换............................");

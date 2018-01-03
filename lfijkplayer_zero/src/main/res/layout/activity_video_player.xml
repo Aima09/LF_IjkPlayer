@@ -6,8 +6,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.linford.lfijkplayer.activity.VideoPlayerActivity">
-      <com.linford.lfijkplayer.view.LFIjkPlayer
+<!--      <com.linford.lfijkplayer.view.LFIjkPlayer
           android:id="@+id/video_ijkplayer"
           android:layout_width="match_parent"
-          android:layout_height="match_parent"></com.linford.lfijkplayer.view.LFIjkPlayer>
+          android:layout_height="match_parent"></com.linford.lfijkplayer.view.LFIjkPlayer>-->
+      <com.shuyu.gsyvideoplayer.video.NormalGSYVideoPlayer
+          android:id="@+id/video_ijkplayer"
+          android:layout_width="match_parent"
+          android:layout_height="match_parent"></com.shuyu.gsyvideoplayer.video.NormalGSYVideoPlayer>
 </android.support.constraint.ConstraintLayout>

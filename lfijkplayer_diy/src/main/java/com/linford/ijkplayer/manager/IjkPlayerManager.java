@@ -357,8 +357,8 @@ public class IjkPlayerManager implements View.OnClickListener, VideoPlayerListen
                 break;
             case R.id.ijk_iv_rotation:
                 Log.i(TAG, "onClick: 屏幕旋转");
-                fullChangeScreen();
-              //  setPlayerRotation();
+                //fullChangeScreen();
+               setPlayerRotation();
                 break;
             case R.id.app_video_fullscreen:
                 break;

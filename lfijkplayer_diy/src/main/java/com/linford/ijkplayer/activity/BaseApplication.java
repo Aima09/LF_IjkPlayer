@@ -37,6 +37,8 @@ public abstract class BaseApplication extends Application {
             ActivityManager am = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
             am.killBackgroundProcesses("com.linford.ijkplayer");
         }
+
+
     }
 
     public abstract Handler getHandler();

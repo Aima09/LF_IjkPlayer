@@ -46,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
         mVideoAdapter.setOnRecyclerViewItemClickListener(new BaseQuickAdapter.OnRecyclerViewItemClickListener() {
             @Override public void onItemClick(View view, int i) {
                 //Intent intent = new Intent(MainActivity.this, VideoPlayActivity.class);
-                Intent intent = new Intent(MainActivity.this, VideoPlayActivity2.class);
+                Intent intent = new Intent(MainActivity.this, VideoPlayActivity3.class);
                 Bundle mBundle = new Bundle();
                 mBundle.putParcelable("videoInfo", videoList.get(i));
                 intent.putExtras(mBundle);
